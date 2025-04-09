@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technology Integrator Survey</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root" class="min-h-screen bg-gray-100 p-4"></div>
+  <script type="text/babel">
+    const deviceTypes = [
+      'Switch', 'Dimmer', 'Fan Control', 'Keypad', 'Remote Keypad'
+    ];
+    const bankColors = ['White', 'Cream', 'Black', 'Red'];
+
+    const Floor = ({ floor, index, updateFloor, addRoom }) => (
+      <div className="mb-4 p-4 bg-white rounded shadow">
+        <div className="flex items-center mb-2">
+          <input
+            type="text"
+            value={floor.name || `Floor ${index + 1}`}
+            onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
+            placeholder={`Floor ${index + 1}`}
+            className="text-lg font-bold border p-1 rounded w-full"
+          />
+        </div>
+        {floor.rooms.map((room, roomIdx) => (
+          <Room
+            key={roomIdx}
+            room={room}
+            floorIdx={index}
+            roomIdx={roomIdx}
+            updateRoom={(updatedRoom) => {
+              const newRooms = [...floor.rooms];
+              newRooms[roomIdx] = updatedRoom;
+              updateFloor({ ...floor, rooms: newRooms });
+            }}
+          />
+        ))}
+        <button
+          className="mt-2 bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+          onClick={addRoom}
+        >
+          + Add Room
+        </button>
+      </div>
+    );
+
+    const Room = ({ room, floorIdx, roomIdx, updateRoom }) => (
+      <div className="ml-4 mb-4 p-4 bg-gray-50 rounded shadow">
+        <div className="flex items-center mb-2">
+          <input
+            type="text"
+            value={room.name || `Room ${roomIdx + 1}`}
+            onChange={(e) => updateRoom({ ...room, name: e.target.value })}
+            placeholder={`Room ${roomIdx + 1}`}
+            className="text-md font-semibold border p-1 rounded w-full"
+          />
+        </div>
+        {room.banks.map((bank, bankIdx) => (
+          <SwitchBank
+            key={bankIdx}
+            bank={bank}
+            floorIdx={floorIdx}
+            roomIdx={roomIdx}
+            bankIdx={bankIdx}
+            updateBank={(updatedBank) => {
+              const newBanks = [...room.banks];
+              newBanks[bankIdx] = updatedBank;
+              updateRoom({ ...room, banks: newBanks });
+            }}
+          />
+        ))}
+        <button
+          className="mt-2 bg-blue-400 text-white px-2 py-1 rounded hover:bg-blue-500"
+          onClick={() => updateRoom({ ...room, banks: [...room.banks, { devices: [], name: '', color: 'White' }] })}
+        >
+          + Add Switch Bank
+        </button>
+        <div className="mt-2">
+          <h4 className="font-medium">Miscellaneous Items</h4>
+          {room.misc.map((item, miscIdx) => (
+            <div key={miscIdx} className="flex items-center mt-1">
+              <input
+                type="text"
+                value={item.label}
+                onChange={(e) => {
+                  const newMisc = [...room.misc];
+                  newMisc[miscIdx] = { ...item, label: e.target.value };
+                  updateRoom({ ...room, misc: newMisc });
+                }}
+                placeholder="e.g., Plug, Occupancy Sensor"
+                className="border p-1 rounded w-full"
+              />
+            </div>
+          ))}
+          <button
+            className="mt-2 bg-blue-300 text-white px-2 py-1 rounded hover:bg-blue-400"
+            onClick={() => updateRoom({ ...room, misc: [...room.misc, { label: '' }] })}
+          >
+            + Add Misc Item
+          </button>
+        </div>
+      </div>
+    );
+
+    const SwitchBank = ({ bank, floorIdx, roomIdx, bankIdx, updateBank }) => (
+      <div className="ml-4 mb-4 p-4 bg-gray-100 rounded">
+        <div className="flex items-center mb-2 space-x-2">
+          <input
+            type="text"
+            value={bank.name || `Switch Bank ${bankIdx + 1}`}
+            onChange={(e) => updateBank({ ...bank, name: e.target.value })}
+            placeholder={`Switch Bank ${bankIdx + 1}`}
+            className="text-sm font-medium border p-1 rounded w-full"
+          />
+          <select
+            value={bank.color}
+            onChange={(e) => updateBank({ ...bank, color: e.target.value })}
+            className="border p-1 rounded"
+          >
+            {bankColors.map((color) => (
+              <option key={color} value={color}>{color}</option>
+            ))}
+          </select>
+        </div>
+        {bank.devices.map((device, devIdx) => (
+          <div key={devIdx} className="flex items-center mt-1">
+            <select
+              value={device.type}
+              onChange={(e) => {
+                const newDevices = [...bank.devices];
+                newDevices[devIdx] = { ...device, type: e.target.value };
+                updateBank({ ...bank, devices: newDevices });
+              }}
+              className="border p-1 rounded mr-2"
+            >
+              {deviceTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={device.label}
+              onChange={(e) => {
+                const newDevices = [...bank.devices];
+                newDevices[devIdx] = { ...device, label: e.target.value };
+                updateBank({ ...bank, devices: newDevices });
+              }}
+              placeholder="Label (e.g., Main Light)"
+              className="border p-1 rounded w-full"
+            />
+          </div>
+        ))}
+        <button
+          className="mt-2 bg-blue-300 text-white px-2 py-1 rounded hover:bg-blue-400"
+          onClick={() => updateBank({ ...bank, devices: [...bank.devices, { type: 'Switch', label: '' }] })}
+        >
+          + Add Device
+        </button>
+      </div>
+    );
+
+    const SurveyApp = () => {
+      const [project, setProject] = React.useState({
+        header: 'Technology Integrator Survey - Lutron Lighting',
+        floors: []
+      });
+
+      const addFloor = () => {
+        setProject({
+          ...project,
+          floors: [...project.floors, { name: '', rooms: [] }]
+        });
+      };
+
+      const updateFloor = (floorIdx, updatedFloor) => {
+        const newFloors = [...project.floors];
+        newFloors[floorIdx] = updatedFloor;
+        setProject({ ...project, floors: newFloors });
+      };
+
+      const updateHeader = (newHeader) => {
+        setProject({ ...project, header: newHeader });
+      };
+
+      const exportSurvey = () => {
+        const json = JSON.stringify(project, null, 2);
+        console.log('Exported Survey:', json);
+        alert('Survey exported to console. Check developer tools (F12) for JSON.');
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+            <input
+              type="text"
+              value={project.header}
+              onChange={(e) => updateHeader(e.target.value)}
+              className="text-2xl font-bold border p-2 rounded w-full"
+              placeholder="Enter survey title"
+            />
+          </div>
+          {project.floors.map((floor, idx) => (
+            <Floor
+              key={idx}
+              floor={floor}
+              index={idx}
+              updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
+              addRoom={() => updateFloor(idx, { ...floor, rooms: [...floor.rooms, { name: '', banks: [], misc: [] }] })}
+            />
+          ))}
+          <button
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            onClick={addFloor}
+          >
+            + Add Floor
+          </button>
+          <button
+            className="ml-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+            onClick={exportSurvey}
+          >
+            Send for Quoting
+          </button>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<SurveyApp />);
+  </script>
+</body>
+</html>
