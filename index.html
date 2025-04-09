@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.emailjs.com/sdk/2.3.2/emailjs.min.js"></script>
 </head>
 <body>
   <div id="root" class="min-h-screen bg-gray-100 p-4"></div>
@@ -189,9 +190,13 @@
       };
 
       const exportSurvey = () => {
+        emailjs.init('tD7k4sRjN8tewRNTb');
         const json = JSON.stringify(project, null, 2);
         console.log('Exported Survey:', json);
-        alert('Survey exported to console. Check developer tools (F12) for JSON.');
+        // Add EmailJS (requires signup and CDN script: https://www.emailjs.com/)
+        emailjs.send('service_k7h0mzt', 'template_x7dnje2', { survey: json }, 'tD7k4sRjN8tewRNTb')
+            .then(() => alert('Survey sent to accounting!'))
+            .catch(() => alert('Failed to send survey.'));
       };
 
       return (
