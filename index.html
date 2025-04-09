@@ -198,9 +198,37 @@
         setProject({ ...project, header: newHeader });
       };
 
+      const formatSurveyForEmail = (project) => {
+        let text = `${project.header}\n\n`;
+        
+        project.floors.forEach((floor, floorIdx) => {
+          text += `Floor ${floor.name || floorIdx + 1}:\n`;
+          floor.rooms.forEach((room, roomIdx) => {
+            text += `  Room ${room.name || roomIdx + 1}:\n`;
+            room.banks.forEach((bank, bankIdx) => {
+              text += `    Switch Bank ${bank.name || bankIdx + 1} (${bank.color}):\n`;
+              bank.devices.forEach((device, devIdx) => {
+                text += `      - ${device.type}${device.label ? `: ${device.label}` : ''}\n`;
+              });
+            });
+            if (room.misc.length > 0) {
+              text += `    Miscellaneous Items:\n`;
+              room.misc.forEach((item) => {
+                text += `      - ${item.label || 'Unnamed item'}\n`;
+              });
+            }
+          });
+          text += '\n';
+        });
+
+        return text;
+      };
+
       const exportSurvey = () => {
-        const json = JSON.stringify(project, null, 2);
-        console.log('Exported Survey:', json);
+        const json = JSON.stringify(project, null, 2); // For console/debugging
+        console.log('Exported Survey JSON:', json);
+
+        const readableSurvey = formatSurveyForEmail(project); // For email
 
         if (!window.emailjs) {
           alert('EmailJS is not loaded. Please check your network and try again.');
@@ -208,8 +236,8 @@
         }
 
         const templateParams = {
-          survey_data: json,
-          to_email: 'info@fullyautomated.us' // Replace with your accounting team's email
+          survey_data: readableSurvey,
+          to_email: 'accounting@yourdomain.com' // Replace with your accounting team's email
         };
 
         emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
