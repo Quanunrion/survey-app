@@ -12,9 +12,9 @@
 </head>
 <body>
   <div id="root" class="min-h-screen bg-gray-100 p-4"></div>
+  <script> window.emailjs = emailjs; </script>
   <script type="text/babel">
 
-    emailjs.init('tD7k4sRjN8tewRNTb');
     
     const deviceTypes = [
       'Switch', 'Dimmer', 'Fan Control', 'Keypad', 'Remote Keypad'
@@ -193,6 +193,7 @@
       };
 
       const exportSurvey = () => {
+        emailjs.init('tD7k4sRjN8tewRNTb');  
         const json = JSON.stringify(project, null, 2);
         console.log('Exported Survey:', json);
         // Add EmailJS (requires signup and CDN script: https://www.emailjs.com/)
