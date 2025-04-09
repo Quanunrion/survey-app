@@ -12,8 +12,9 @@
 </head>
 <body>
   <div id="root" class="min-h-screen bg-gray-100 p-4"></div>
-  <script> window.emailjs = emailjs; </script>
-  <script type="text/babel">
+<script type="text/babel">
+window.onload = () => {
+  window.emailjs = emailjs;
 
     
     const deviceTypes = [
@@ -238,8 +239,9 @@
       );
     };
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<SurveyApp />);
-  </script>
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<SurveyApp />);
+};
+</script>
 </body>
 </html>
