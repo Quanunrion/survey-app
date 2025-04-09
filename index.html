@@ -8,15 +8,11 @@
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.emailjs.com/sdk/2.3.2/emailjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
 <body>
   <div id="root" class="min-h-screen bg-gray-100 p-4"></div>
-<script type="text/babel">
-window.onload = () => {
-  window.emailjs = emailjs;
-
-    
+  <script type="text/babel">
     const deviceTypes = [
       'Switch', 'Dimmer', 'Fan Control', 'Keypad', 'Remote Keypad'
     ];
@@ -176,6 +172,15 @@ window.onload = () => {
         floors: []
       });
 
+      React.useEffect(() => {
+        if (window.emailjs) {
+          emailjs.init('tD7k4sRjN8tewRNTb'); // Your EmailJS Public Key
+          console.log('EmailJS initialized');
+        } else {
+          console.error('EmailJS script not loaded');
+        }
+      }, []);
+
       const addFloor = () => {
         setProject({
           ...project,
@@ -194,13 +199,28 @@ window.onload = () => {
       };
 
       const exportSurvey = () => {
-        emailjs.init('tD7k4sRjN8tewRNTb');  
         const json = JSON.stringify(project, null, 2);
         console.log('Exported Survey:', json);
-        // Add EmailJS (requires signup and CDN script: https://www.emailjs.com/)
-        emailjs.send('service_k7h0mzt', 'template_x7dnje2', { survey: json }, 'tD7k4sRjN8tewRNTb')
-            .then(() => alert('Survey sent to accounting!'))
-            .catch(() => alert('Failed to send survey.'));
+
+        if (!window.emailjs) {
+          alert('EmailJS is not loaded. Please check your network and try again.');
+          return;
+        }
+
+        const templateParams = {
+          survey_data: json,
+          to_email: 'info@fullyautomated.us' // Replace with your accounting team's email
+        };
+
+        emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
+          .then((response) => {
+            console.log('Email sent successfully:', response.status, response.text);
+            alert('Survey sent to accounting!');
+          })
+          .catch((error) => {
+            console.error('Failed to send email:', error);
+            alert('Failed to send survey. Check console for details.');
+          });
       };
 
       return (
@@ -239,9 +259,8 @@ window.onload = () => {
       );
     };
 
-  const root = ReactDOM.createRoot(document.getElementById('root'));
-  root.render(<SurveyApp />);
-};
-</script>
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<SurveyApp />);
+  </script>
 </body>
 </html>
