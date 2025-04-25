@@ -204,13 +204,15 @@
         project.floors.forEach((floor, floorIdx) => {
           const floorName = floor.name || `Floor ${floorIdx + 1}`;
           html += `
+            <p><strong>${floorName}</strong></p>
             <details open>
-              <summary><strong>${floorName}</strong></summary>
+              <summary>${floorName}</summary>
               <br>
           `;
           floor.rooms.forEach((room, roomIdx) => {
             const roomName = room.name || `Room ${roomIdx + 1}`;
             html += `
+              <p>${roomName}</p>
               <details open>
                 <summary>${roomName}</summary>
                 <br>
@@ -218,17 +220,18 @@
             room.banks.forEach((bank, bankIdx) => {
               const bankName = bank.name || `Bank ${bankIdx + 1}`;
               html += `
+                <p>${bankName}</p>
                 <details open>
                   <summary>${bankName}</summary>
-                  ${bank.devices.map(device => `${device.type} - ${bank.color}${device.label ? ` (${device.label})` : ''}`).join('<br>') || 'No devices'}
+                  ${bank.devices.map(device => `<p>${device.type} - ${bank.color}${device.label ? ` (${device.label})` : ''}</p>`).join('') || '<p>No devices</p>'}
                 </details>
                 <br>
               `;
             });
             if (room.misc.length > 0) {
               html += `
-                Miscellaneous Items:<br>
-                ${room.misc.map(item => `${item.label || 'Unnamed item'}`).join('<br>')}
+                <p>Miscellaneous Items:</p>
+                ${room.misc.map(item => `<p>${item.label || 'Unnamed item'}</p>`).join('')}
                 <br>
               `;
             }
@@ -260,7 +263,7 @@
         console.log('Template Params:', templateParams);
         debugger; // Pause execution for inspection in DevTools
 
-        emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
+        emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams) // Replace 'template_x7dnje2' with new Template ID if created
           .then((response) => {
             console.log('Email sent successfully:', response.status, response.text);
             alert('Survey sent to accounting!');
