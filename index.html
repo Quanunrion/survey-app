@@ -199,29 +199,45 @@
       };
 
       const formatSurveyForEmail = (project) => {
-        let text = `${project.header}\n\n`;
-        
+        let html = `<h1>${project.header}</h1><br>`;
+
         project.floors.forEach((floor, floorIdx) => {
-          text += `Floor ${floor.name || floorIdx + 1}:\n`;
+          const floorName = floor.name || `Floor ${floorIdx + 1}`;
+          html += `
+            <details open>
+              <summary><strong>${floorName}</strong></summary>
+              <br>
+          `;
           floor.rooms.forEach((room, roomIdx) => {
-            text += `  Room ${room.name || roomIdx + 1}:\n`;
+            const roomName = room.name || `Room ${roomIdx + 1}`;
+            html += `
+              <details open>
+                <summary>${roomName}</summary>
+                <br>
+            `;
             room.banks.forEach((bank, bankIdx) => {
-              text += `    Switch Bank ${bank.name || bankIdx + 1} (${bank.color}):\n`;
-              bank.devices.forEach((device, devIdx) => {
-                text += `      - ${device.type}${device.label ? `: ${device.label}` : ''}\n`;
-              });
+              const bankName = bank.name || `Bank ${bankIdx + 1}`;
+              html += `
+                <details open>
+                  <summary>${bankName}</summary>
+                  ${bank.devices.map(device => `${device.type} - ${bank.color}${device.label ? ` (${device.label})` : ''}`).join('<br>') || 'No devices'}
+                </details>
+                <br>
+              `;
             });
             if (room.misc.length > 0) {
-              text += `    Miscellaneous Items:\n`;
-              room.misc.forEach((item) => {
-                text += `      - ${item.label || 'Unnamed item'}\n`;
-              });
+              html += `
+                Miscellaneous Items:<br>
+                ${room.misc.map(item => `${item.label || 'Unnamed item'}`).join('<br>')}
+                <br>
+              `;
             }
+            html += `</details><br>`;
           });
-          text += '\n';
+          html += `</details><br>`;
         });
 
-        return text;
+        return html;
       };
 
       const exportSurvey = () => {
