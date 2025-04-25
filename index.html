@@ -14,9 +14,30 @@
   <div id="root" class="min-h-screen bg-gray-100 p-4"></div>
   <script type="text/babel">
     const deviceTypes = [
-      'Switch', 'Dimmer', 'Fan Control', 'Keypad', 'Remote Keypad'
+      'Dimmer', 'Switch', 'Keypad', 'Fan', 'Companion Dimmer', 'Companion Switch', 'Remote Keypad', 'Pico Remote'
     ];
-    const bankColors = ['White', 'Cream', 'Black', 'Red'];
+    const bankColors = [
+      'White', 'Light Almond', 'Ivory', 'Black', 'Brilliant White', 'Glacier White', 'Snow',
+      'Architectural White', 'Lunar Grey', 'Mist', 'Pebble', 'Cobblestone', 'Biscuit', 'Slate',
+      'Sand', 'Taupe', 'Pumice', 'Clay', 'Sage', 'Espresso', 'Truffle', 'Deep Sea', 'Signal Red', 'Midnight'
+    ];
+    const colorCodes = {
+      'White': 'WH', 'Light Almond': 'LA', 'Ivory': 'IV', 'Black': 'BL', 'Brilliant White': 'BW',
+      'Glacier White': 'GL', 'Snow': 'SW', 'Architectural White': 'RW', 'Lunar Grey': 'LG', 'Mist': 'MI',
+      'Pebble': 'PB', 'Cobblestone': 'CS', 'Biscuit': 'BI', 'Slate': 'SL', 'Sand': 'SD', 'Taupe': 'TP',
+      'Pumice': 'PM', 'Clay': 'CY', 'Sage': 'SA', 'Espresso': 'EP', 'Truffle': 'TF', 'Deep Sea': 'DE',
+      'Signal Red': 'SR', 'Midnight': 'MN'
+    };
+    const modelCodes = {
+      'Switch': 'RRST-8ANS-XX',
+      'Dimmer': 'RRST-PRO-N-XX',
+      'Keypad': 'RRST-W4B-XX',
+      'Fan': 'RRD-2ANF-XX',
+      'Companion Dimmer': 'RRST-RD-XX',
+      'Companion Switch': 'RRST-RS-XX',
+      'Remote Keypad': 'RRST-W4B-XX',
+      'Pico Remote': 'PJ2-4B-GWH-L31'
+    };
 
     const Floor = ({ floor, index, updateFloor, addRoom }) => (
       <div className="mb-4 p-4 bg-white rounded shadow">
@@ -82,30 +103,6 @@
         >
           + Add Switch Bank
         </button>
-        <div className="mt-2">
-          <h4 className="font-medium">Miscellaneous Items</h4>
-          {room.misc.map((item, miscIdx) => (
-            <div key={miscIdx} className="flex items-center mt-1">
-              <input
-                type="text"
-                value={item.label}
-                onChange={(e) => {
-                  const newMisc = [...room.misc];
-                  newMisc[miscIdx] = { ...item, label: e.target.value };
-                  updateRoom({ ...room, misc: newMisc });
-                }}
-                placeholder="e.g., Plug, Occupancy Sensor"
-                className="border p-1 rounded w-full"
-              />
-            </div>
-          ))}
-          <button
-            className="mt-2 bg-blue-300 text-white px-2 py-1 rounded hover:bg-blue-400"
-            onClick={() => updateRoom({ ...room, misc: [...room.misc, { label: '' }] })}
-          >
-            + Add Misc Item
-          </button>
-        </div>
       </div>
     );
 
@@ -123,6 +120,7 @@
             value={bank.color}
             onChange={(e) => updateBank({ ...bank, color: e.target.value })}
             className="border p-1 rounded"
+            disabled={bank.devices.some(device => device.type === 'Pico Remote')}
           >
             {bankColors.map((color) => (
               <option key={color} value={color}>{color}</option>
@@ -200,38 +198,29 @@
 
       const formatSurveyForEmail = (project) => {
         // CSV header
-        let csv = 'Floor,Room,Bank,Device Type,Device Label,Bank Color,Miscellaneous Item\n';
+        let csv = 'Quantity,Model,Location\n';
 
         project.floors.forEach((floor, floorIdx) => {
           const floorName = floor.name || `Floor ${floorIdx + 1}`;
           floor.rooms.forEach((room, roomIdx) => {
             const roomName = room.name || `Room ${roomIdx + 1}`;
             room.banks.forEach((bank, bankIdx) => {
-              const bankName = bank.name || `Bank ${bankIdx + 1}`;
-              if (bank.devices.length === 0) {
-                // Empty bank
-                csv += `"${floorName}","${roomName}","${bankName}","No devices","","${bank.color}",""\n`;
-              } else {
-                bank.devices.forEach(device => {
-                  // Device row
-                  csv += `"${floorName}","${roomName}","${bankName}","${device.type}","${device.label || ''}","${bank.color}",""\n`;
-                });
-              }
-            });
-            if (room.misc.length > 0) {
-              room.misc.forEach(item => {
-                // Misc item row
-                csv += `"${floorName}","${roomName}","","","","","${item.label || 'Unnamed item'}"\n`;
+              const bankName = bank.name || `Switch Bank ${bankIdx + 1}`;
+              const location = `${floorName}: ${roomName}: ${bankName}`;
+              bank.devices.forEach(device => {
+                let model = modelCodes[device.type];
+                if (device.type === 'Pico Remote') {
+                  // Pico Remote has fixed model, no color
+                  csv += `1,${model},"${location}"\n`;
+                } else {
+                  // Replace XX with color code
+                  const colorCode = colorCodes[bank.color] || 'WH';
+                  model = model.replace('XX', colorCode);
+                  csv += `1,${model},"${location}"\n`;
+                }
               });
-            } else if (room.banks.length === 0) {
-              // Empty room with no banks or misc items
-              csv += `"${floorName}","${roomName}","","No devices","","",""\n`;
-            }
+            });
           });
-          if (floor.rooms.length === 0) {
-            // Empty floor
-            csv += `"${floorName}","","","No devices","","",""\n`;
-          }
         });
 
         return csv;
@@ -259,7 +248,7 @@
         emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
           .then((response) => {
             console.log('Email sent successfully:', response.status, response.text);
-            alert('Survey sent to accounting! Copy the email content into a .csv file.');
+            alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
           })
           .catch((error) => {
             console.error('Failed to send email:', error);
