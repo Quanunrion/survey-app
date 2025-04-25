@@ -199,48 +199,42 @@
       };
 
       const formatSurveyForEmail = (project) => {
-        let html = `<h1>${project.header}</h1><br>`;
+        // CSV header
+        let csv = 'Floor,Room,Bank,Device Type,Device Label,Bank Color,Miscellaneous Item\n';
 
         project.floors.forEach((floor, floorIdx) => {
           const floorName = floor.name || `Floor ${floorIdx + 1}`;
-          html += `
-            <p><strong>${floorName}</strong></p>
-            <details open>
-              <summary>${floorName}</summary>
-              <br>
-          `;
           floor.rooms.forEach((room, roomIdx) => {
             const roomName = room.name || `Room ${roomIdx + 1}`;
-            html += `
-              <p>${roomName}</p>
-              <details open>
-                <summary>${roomName}</summary>
-                <br>
-            `;
             room.banks.forEach((bank, bankIdx) => {
               const bankName = bank.name || `Bank ${bankIdx + 1}`;
-              html += `
-                <p>${bankName}</p>
-                <details open>
-                  <summary>${bankName}</summary>
-                  ${bank.devices.map(device => `<p>${device.type} - ${bank.color}${device.label ? ` (${device.label})` : ''}</p>`).join('') || '<p>No devices</p>'}
-                </details>
-                <br>
-              `;
+              if (bank.devices.length === 0) {
+                // Empty bank
+                csv += `"${floorName}","${roomName}","${bankName}","No devices","","${bank.color}",""\n`;
+              } else {
+                bank.devices.forEach(device => {
+                  // Device row
+                  csv += `"${floorName}","${roomName}","${bankName}","${device.type}","${device.label || ''}","${bank.color}",""\n`;
+                });
+              }
             });
             if (room.misc.length > 0) {
-              html += `
-                <p>Miscellaneous Items:</p>
-                ${room.misc.map(item => `<p>${item.label || 'Unnamed item'}</p>`).join('')}
-                <br>
-              `;
+              room.misc.forEach(item => {
+                // Misc item row
+                csv += `"${floorName}","${roomName}","","","","","${item.label || 'Unnamed item'}"\n`;
+              });
+            } else if (room.banks.length === 0) {
+              // Empty room with no banks or misc items
+              csv += `"${floorName}","${roomName}","","No devices","","",""\n`;
             }
-            html += `</details><br>`;
           });
-          html += `</details><br>`;
+          if (floor.rooms.length === 0) {
+            // Empty floor
+            csv += `"${floorName}","","","No devices","","",""\n`;
+          }
         });
 
-        return html;
+        return csv;
       };
 
       const exportSurvey = () => {
@@ -248,7 +242,7 @@
         console.log('Exported Survey JSON:', json);
 
         const readableSurvey = formatSurveyForEmail(project); // For email
-        console.log('Formatted Email Content:', readableSurvey);
+        console.log('Formatted Email Content (CSV):', readableSurvey);
 
         if (!window.emailjs) {
           alert('EmailJS is not loaded. Please check your network and try again.');
@@ -261,12 +255,11 @@
         };
 
         console.log('Template Params:', templateParams);
-        debugger; // Pause execution for inspection in DevTools
 
-        emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams) // Replace 'template_x7dnje2' with new Template ID if created
+        emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
           .then((response) => {
             console.log('Email sent successfully:', response.status, response.text);
-            alert('Survey sent to accounting!');
+            alert('Survey sent to accounting! Copy the email content into a .csv file.');
           })
           .catch((error) => {
             console.error('Failed to send email:', error);
