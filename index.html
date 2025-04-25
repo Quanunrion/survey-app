@@ -245,6 +245,7 @@
         console.log('Exported Survey JSON:', json);
 
         const readableSurvey = formatSurveyForEmail(project); // For email
+        console.log('Formatted Email Content:', readableSurvey);
 
         if (!window.emailjs) {
           alert('EmailJS is not loaded. Please check your network and try again.');
@@ -255,6 +256,9 @@
           survey_data: readableSurvey,
           to_email: 'accounting@yourdomain.com' // Replace with your accounting team's email
         };
+
+        console.log('Template Params:', templateParams);
+        debugger; // Pause execution for inspection in DevTools
 
         emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
           .then((response) => {
