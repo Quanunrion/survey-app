@@ -103,6 +103,30 @@
         >
           + Add Switch Bank
         </button>
+        <div className="mt-2">
+          <h4 className="font-medium">Miscellaneous Items</h4>
+          {room.misc.map((item, miscIdx) => (
+            <div key={miscIdx} className="flex items-center mt-1">
+              <input
+                type="text"
+                value={item.label}
+                onChange={(e) => {
+                  const newMisc = [...room.misc];
+                  newMisc[miscIdx] = { ...item, label: e.target.value };
+                  updateRoom({ ...room, misc: newMisc });
+                }}
+                placeholder="e.g., Plug, Occupancy Sensor"
+                className="border p-1 rounded w-full"
+              />
+            </div>
+          ))}
+          <button
+            className="mt-2 bg-blue-300 text-white px-2 py-1 rounded hover:bg-blue-400"
+            onClick={() => updateRoom({ ...room, misc: [...room.misc, { label: '' }] })}
+          >
+            + Add Misc Item
+          </button>
+        </div>
       </div>
     );
 
@@ -198,12 +222,13 @@
 
       const formatSurveyForEmail = (project) => {
         // CSV header
-        let csv = 'Quantity,Model,Location\n';
+        let csv = 'Quantity,Model,Location,Manufacturer\n';
 
         project.floors.forEach((floor, floorIdx) => {
           const floorName = floor.name || `Floor ${floorIdx + 1}`;
           floor.rooms.forEach((room, roomIdx) => {
             const roomName = room.name || `Room ${roomIdx + 1}`;
+            // Devices in banks
             room.banks.forEach((bank, bankIdx) => {
               const bankName = bank.name || `Switch Bank ${bankIdx + 1}`;
               const location = `${floorName}: ${roomName}: ${bankName}`;
@@ -211,15 +236,22 @@
                 let model = modelCodes[device.type];
                 if (device.type === 'Pico Remote') {
                   // Pico Remote has fixed model, no color
-                  csv += `1,${model},"${location}"\n`;
+                  csv += `1,${model},"${location}",Lutron\n`;
                 } else {
                   // Replace XX with color code
                   const colorCode = colorCodes[bank.color] || 'WH';
                   model = model.replace('XX', colorCode);
-                  csv += `1,${model},"${location}"\n`;
+                  csv += `1,${model},"${location}",Lutron\n`;
                 }
               });
             });
+            // Miscellaneous items
+            if (room.misc.length > 0) {
+              const location = `${floorName}: ${roomName}`;
+              room.misc.forEach(item => {
+                csv += `1,MISC-ITEM,"${location}",Lutron\n`;
+              });
+            }
           });
         });
 
