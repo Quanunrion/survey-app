@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuid.min.js';
+import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/v4.min.js';
 
 const deviceTypes = ['Switch', 'Dimmer', 'Fan Control', 'Pico Remote'];
 const bankColors = ['White', 'Light Almond', 'Black', 'Gray', 'Brown', 'Ivory'];
