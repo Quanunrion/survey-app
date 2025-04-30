@@ -1,4 +1,4 @@
-< !DOCTYPE html >
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -20,6 +20,14 @@
         import ConfirmationModal from './ConfirmationModal.js';
         import { formatSurveyForEmail } from './utils.js';
         import { uuidv4 } from './constants.js';
+
+        // Error handling for module loading
+        window.addEventListener('error', (event) => {
+            if (event.message.includes('Failed to fetch') || event.message.includes('SyntaxError')) {
+                console.error('Module loading error:', event);
+                alert('Failed to load a required script. Please check if all files (Floor.js, ConfirmationModal.js, utils.js, constants.js) are present in the repository root.');
+            }
+        });
 
         const SurveyApp = () => {
             const [project, setProject] = useState({
@@ -67,10 +75,6 @@
                     console.error('Failed to save survey to localStorage:', e);
                 }
             }, [project]);
-
-            useEffect(() => {
-                console.log('Project floors updated:', project.floors);
-            }, [project.floors]);
 
             const showConfirmModal = ({ message, onConfirm, onCancel }) => {
                 setModalState({
@@ -145,6 +149,27 @@
 
             const updateHeader = (newHeader) => {
                 setProject({ ...project, header: newHeader });
+            };
+
+            const setEquipmentRoom = (floorIdx, roomIdx) => {
+                try {
+                    const current = project.equipmentRoom;
+                    if (current && current.floorIdx === floorIdx && current.roomIdx === roomIdx) {
+                        const newFloors = [...project.floors];
+                        newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = false;
+                        setProject({ ...project, floors: newFloors, equipmentRoom: null });
+                    } else {
+                        const newFloors = [...project.floors];
+                        if (current) {
+                            newFloors[current.floorIdx].rooms[current.roomIdx].control4.isEquipmentRoom = false;
+                        }
+                        newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = true;
+                        setProject({ ...project, floors: newFloors, equipmentRoom: { floorIdx, roomIdx } });
+                    }
+                } catch (e) {
+                    console.error('Error setting equipment room:', e);
+                    alert('Failed to set equipment room. Check console for details.');
+                }
             };
 
             const exportSurvey = () => {
@@ -265,6 +290,7 @@
                                 currentTab={project.currentTab}
                                 floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
                                 showConfirmModal={showConfirmModal}
+                                setEquipmentRoom={setEquipmentRoom}
                             />
                         ))}
                     </div>
