@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/v4.min.js';
+import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/index.js';
 
 const deviceTypes = ['Switch', 'Dimmer', 'Fan Control', 'Pico Remote'];
 const bankColors = ['White', 'Light Almond', 'Black', 'Gray', 'Brown', 'Ivory'];
@@ -31,6 +31,14 @@ const colorCodes = {
     'Brown': 'BR',
     'Ivory': 'IV'
 };
+
+// Log successful import or catch errors
+try {
+    console.log('UUID v4 imported successfully:', uuidv4);
+} catch (e) {
+    console.error('Failed to import UUID:', e);
+    alert('Failed to load UUID library. Check console for details and ensure network connectivity.');
+}
 
 export {
     deviceTypes,
