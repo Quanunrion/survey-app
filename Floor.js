@@ -126,7 +126,7 @@ const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, curre
     </div>
 );
 
-const Floor = ({ floor, index, updateFloor, addRoom, deleteFloor, copyFloor, currentTab, floorRef, showConfirmModal }) => {
+const Floor = ({ floor, index, updateFloor, addRoom, deleteFloor, copyFloor, currentTab, floorRef, showConfirmModal, setEquipmentRoom }) => {
     const roomRefs = useRef([]);
 
     useEffect(() => {

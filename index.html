@@ -14,20 +14,26 @@
 <body>
     <div id="root" className="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
     <script type="module" data-type="text/babel">
-        import React, { useState, useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js';
-        import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js';
-        import Floor from './Floor.js';
-        import ConfirmationModal from './ConfirmationModal.js';
-        import { formatSurveyForEmail } from './utils.js';
-        import { uuidv4 } from './constants.js';
-
-        // Error handling for module loading
+        // Enhanced error handling for module loading
         window.addEventListener('error', (event) => {
             if (event.message.includes('Failed to fetch') || event.message.includes('SyntaxError')) {
                 console.error('Module loading error:', event);
-                alert('Failed to load a required script. Please check if all files (Floor.js, ConfirmationModal.js, utils.js, constants.js) are present in the repository root.');
+                const failedFile = event.filename || 'unknown file';
+                alert(`Failed to load script: ${failedFile}. Ensure Floor.js, ConfirmationModal.js, utils.js, and constants.js are in the repository root with correct case.`);
             }
         });
+
+        try {
+            import React, { useState, useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js';
+            import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js';
+            import Floor from './Floor.js';
+            import ConfirmationModal from './ConfirmationModal.js';
+            import { formatSurveyForEmail } from './utils.js';
+            import { uuidv4 } from './constants.js';
+        } catch (e) {
+            console.error('Import error:', e);
+            alert('Failed to import modules. Check console for details.');
+        }
 
         const SurveyApp = () => {
             const [project, setProject] = useState({
