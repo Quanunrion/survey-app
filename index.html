@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+< !DOCTYPE html >
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,509 +14,303 @@
 <body>
     <div id="root" className="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
     <script type="module" data-type="text/babel">
-    import React, { useState, useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js';
-    import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js';
-    import Floor from './Floor.js';
-    import ConfirmationModal from './ConfirmationModal.js';
-    import { formatSurveyForEmail, generateFallbackId } from './utils.js';
-    import { uuidv4 } from './constants.js';
+        import React, { useState, useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js';
+        import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js';
+        import Floor from './Floor.js';
+        import ConfirmationModal from './ConfirmationModal.js';
+        import { formatSurveyForEmail } from './utils.js';
+        import { uuidv4 } from './constants.js';
 
-    const SurveyApp = () => {
-      const [project, setProject] = useState({
-        id: uuidv4(),
-        timestamp: new Date().toISOString(),
-        header: 'Technology Integrator Survey - Lutron, Control4 & Locks',
-        floors: [],
-        equipmentRoom: null,
-        currentTab: 'lighting'
-      });
-
-      const [modalState, setModalState] = useState({
-        isOpen: false,
-        message: '',
-        onConfirm: () => {},
-        onCancel: () => {}
-      });
-
-      const floorRefs = useRef([]);
-
-      useEffect(() => {
-        if (window.emailjs) {
-          emailjs.init('tD7k4sRjN8tewRNTb');
-          console.log('EmailJS initialized');
-        } else {
-          console.error('EmailJS script not loaded');
-        }
-      }, []);
-
-      useEffect(() => {
-        try {
-          const savedSurvey = localStorage.getItem('survey');
-          if (savedSurvey) {
-            setProject(JSON.parse(savedSurvey));
-          }
-        } catch (e) {
-          console.error('Failed to load survey from localStorage:', e);
-        }
-      }, []);
-
-      useEffect(() => {
-        try {
-          localStorage.setItem('survey', JSON.stringify(project));
-        } catch (e) {
-          console.error('Failed to save survey to localStorage:', e);
-        }
-      }, [project]);
-
-      useEffect(() => {
-        console.log('Project floors updated:', project.floors);
-      }, [project.floors]);
-
-      const showConfirmModal = ({ message, onConfirm, onCancel }) => {
-        setModalState({
-          isOpen: true,
-          message,
-          onConfirm: () => {
-            onConfirm();
-            setModalState({ isOpen: false, message: '', onConfirm: () => {}, onCancel: () => {} });
-          },
-          onCancel: () => {
-            onCancel();
-            setModalState({ isOpen: false, message: '', onConfirm: () => {}, onCancel: () => {} });
-          }
-        });
-      };
-
-      const addFloor = () => {
-        try {
-          floorRefs.current.push(React.createRef());
-          const newFloors = [...project.floors, { name: '', rooms: [] }];
-          setProject({ ...project, floors: newFloors }, () => {
-            console.log('Added floor, new state:', newFloors);
-          });
-          setTimeout(() => {
-            if (floorRefs.current[floorRefs.current.length - 1]?.current) {
-              floorRefs.current[floorRefs.current.length - 1].current.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 0);
-        } catch (e) {
-          console.error('Error adding floor:', e);
-          alert('Failed to add floor. Check console for details.');
-        }
-      };
-
-      const updateFloor = (floorIdx, updatedFloor) => {
-        try {
-          const newFloors = [...project.floors];
-          newFloors[floorIdx] = updatedFloor;
-          setProject({ ...project, floors: newFloors }, () => {
-            console.log('Updated floor, new state:', newFloors);
-          });
-        } catch (e) {
-          console.error('Error updating floor:', e);
-          alert('Failed to update floor. Check console for details.');
-        }
-      };
-
-      const deleteFloor = (floorIdx) => {
-        try {
-          console.log('State before delete:', project.floors);
-          const newFloors = project.floors.filter((_, i) => i !== floorIdx);
-          const newEquipmentRoom = project.equipmentRoom && project.equipmentRoom.floorIdx === floorIdx ? null : project.equipmentRoom;
-          floorRefs.current.splice(floorIdx, 1);
-          setProject({ ...project, floors: newFloors, equipmentRoom: newEquipmentRoom }, () => {
-            console.log('State after delete:', newFloors);
-          });
-        } catch (e) {
-          console.error('Error deleting floor:', e);
-          alert('Failed to delete floor. Check console for details.');
-        }
-      };
-
-      const copyFloor = (floorIdx) => {
-        try {
-          console.log('State before copy:', project.floors);
-          const newFloors = [...project.floors];
-          newFloors.splice(floorIdx + 1, 0, { ...project.floors[floorIdx] });
-          floorRefs.current.splice(floorIdx + 1, 0, React.createRef());
-          setProject({ ...project, floors: newFloors }, () => {
-            console.log('State after copy:', newFloors);
-          });
-          setTimeout(() => {
-            if (floorRefs.current[floorIdx + 1]?.current) {
-              floorRefs.current[floorIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 0);
-        } catch (e) {
-          console.error('Error copying floor:', e);
-          alert('Failed to copy floor. Check console for details.');
-        }
-      };
-
-      const updateHeader = (newHeader) => {
-        setProject({ ...project, header: newHeader });
-      };
-
-      const setEquipmentRoom = (floorIdx, roomIdx) => {
-        try {
-          const current = project.equipmentRoom;
-          if (current && current.floorIdx === floorIdx && current.roomIdx === roomIdx) {
-            const newFloors = [...project.floors];
-            newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = false;
-            setProject({ ...project, floors: newFloors, equipmentRoom: null });
-          } else {
-            const newFloors = [...project.floors];
-            if (current) {
-              newFloors[current.floorIdx].rooms[current.roomIdx].control4.isEquipmentRoom = false;
-            }
-            newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = true;
-            setProject({ ...project, floors: newFloors, equipmentRoom: { floorIdx, roomIdx } });
-          }
-        } catch (e) {
-          console.error('Error setting equipment room:', e);
-          alert('Failed to set equipment room. Check console for details.');
-        }
-      };
-
-      const exportSurvey = () => {
-        try {
-          const json = JSON.stringify(project, null, 2);
-          console.log('Exported Survey JSON:', json);
-
-          const readableSurvey = formatSurveyForEmail(project);
-          console.log('Formatted Email Content (CSV):', readableSurvey);
-
-          if (!window.emailjs) {
-            alert('EmailJS is not loaded. Please check your network and try again.');
- zwró
-
-System: It looks like the response was cut off, likely due to the length of the artifacts being generated. Since you’ve requested to split the `index.html` file into multiple files to avoid timeouts, and I was in the process of generating artifacts for `index.html` and other files, I’ll continue by providing a streamlined approach to complete the task. I’ll generate the remaining artifacts for the split files and provide clear GitHub update instructions, keeping the response concise to avoid further issues.
-
-### Plan Recap
-- **Objective**: Split the `index.html` (artifact_id: `7ebb2f45-1467-435b-b0cd-d16f5e1ef158`) into multiple files (`index.html`, `Floor.js`, `Lighting.js`, `Control4.js`, `Locks.js`, `ConfirmationModal.js`, `constants.js`, `utils.js`) while preserving all logic (mobile UI, text fields, lock delete/copy, headers, auto-scroll, rack exclusion, auto-lock, copy features, local storage, EmailJS, room-adding fix, and ConfirmationModal).
-- **Issue**: The previous response timed out while generating artifacts, so I’ll provide all artifacts below, ensuring each has a unique `artifact_id` (new files, not updates to the original).
-- **GitHub Instructions**: I’ll include steps to update the GitHub repository with the new file structure.
-
-### Artifacts
-Below are the artifacts for all files. Each contains only the necessary code, with logic unchanged from the previous `index.html`. I’ve ensured modularity using ES modules and JSX, compatible with Babel and the browser environment.
-
-#### 1. index.html
-Main entry point with `SurveyApp` and `ErrorBoundary`.
-
-<xaiArtifact artifact_id="8a1e5484-255e-420c-b917-f5c05f90b79e" artifact_version_id="45b08955-5e29-4a90-9172-d2a266bbbbf1" title="index.html" contentType="text/html">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Technology Integrator Survey</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuid.min.js" crossorigin="anonymous"></script>
-    </head>
-    <body>
-        <div id="root" className="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
-        <script type="module" data-type="text/babel">
-    import React, { useState, useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js';
-    import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js';
-    import Floor from './Floor.js';
-    import ConfirmationModal from './ConfirmationModal.js';
-    import { formatSurveyForEmail } from './utils.js';
-    import { uuidv4 } from './constants.js';
-
-    const SurveyApp = () => {
-      const [project, setProject] = useState({
-        id: uuidv4(),
-        timestamp: new Date().toISOString(),
-        header: 'Technology Integrator Survey - Lutron, Control4 & Locks',
-        floors: [],
-        equipmentRoom: null,
-        currentTab: 'lighting'
-      });
-
-      const [modalState, setModalState] = useState({
-        isOpen: false,
-        message: '',
-        onConfirm: () => {},
-        onCancel: () => {}
-      });
-
-      const floorRefs = useRef([]);
-
-      useEffect(() => {
-        if (window.emailjs) {
-          emailjs.init('tD7k4sRjN8tewRNTb');
-          console.log('EmailJS initialized');
-        } else {
-          console.error('EmailJS script not loaded');
-        }
-      }, []);
-
-      useEffect(() => {
-        try {
-          const savedSurvey = localStorage.getItem('survey');
-          if (savedSurvey) {
-            setProject(JSON.parse(savedSurvey));
-          }
-        } catch (e) {
-          console.error('Failed to load survey from localStorage:', e);
-        }
-      }, []);
-
-      useEffect(() => {
-        try {
-          localStorage.setItem('survey', JSON.stringify(project));
-        } catch (e) {
-          console.error('Failed to save survey to localStorage:', e);
-        }
-      }, [project]);
-
-      useEffect(() => {
-        console.log('Project floors updated:', project.floors);
-      }, [project.floors]);
-
-      const showConfirmModal = ({ message, onConfirm, onCancel }) => {
-        setModalState({
-          isOpen: true,
-          message,
-          onConfirm: () => {
-            onConfirm();
-            setModalState({ isOpen: false, message: '', onConfirm: () => {}, onCancel: () => {} });
-          },
-          onCancel: () => {
-            onCancel();
-            setModalState({ isOpen: false, message: '', onConfirm: () => {}, onCancel: () => {} });
-          }
-        });
-      };
-
-      const addFloor = () => {
-        try {
-          floorRefs.current.push(React.createRef());
-          const newFloors = [...project.floors, { name: '', rooms: [] }];
-          setProject({ ...project, floors: newFloors });
-          setTimeout(() => {
-            if (floorRefs.current[floorRefs.current.length - 1]?.current) {
-              floorRefs.current[floorRefs.current.length - 1].current.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 0);
-        } catch (e) {
-          console.error('Error adding floor:', e);
-          alert('Failed to add floor. Check console for details.');
-        }
-      };
-
-      const updateFloor = (floorIdx, updatedFloor) => {
-        try {
-          const newFloors = [...project.floors];
-          newFloors[floorIdx] = updatedFloor;
-          setProject({ ...project, floors: newFloors });
-        } catch (e) {
-          console.error('Error updating floor:', e);
-          alert('Failed to update floor. Check console for details.');
-        }
-      };
-
-      const deleteFloor = (floorIdx) => {
-        try {
-          const newFloors = project.floors.filter((_, i) => i !== floorIdx);
-          const newEquipmentRoom = project.equipmentRoom && project.equipmentRoom.floorIdx === floorIdx ? null : project.equipmentRoom;
-          floorRefs.current.splice(floorIdx, 1);
-          setProject({ ...project, floors: newFloors, equipmentRoom: newEquipmentRoom });
-        } catch (e) {
-          console.error('Error deleting floor:', e);
-          alert('Failed to delete floor. Check console for details.');
-        }
-      };
-
-      const copyFloor = (floorIdx) => {
-        try {
-          const newFloors = [...project.floors];
-          newFloors.splice(floorIdx + 1, 0, { ...project.floors[floorIdx] });
-          floorRefs.current.splice(floorIdx + 1, 0, React.createRef());
-          setProject({ ...project, floors: newFloors });
-          setTimeout(() => {
-            if (floorRefs.current[floorIdx + 1]?.current) {
-              floorRefs.current[floorIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 0);
-        } catch (e) {
-          console.error('Error copying floor:', e);
-          alert('Failed to copy floor. Check console for details.');
-        }
-      };
-
-      const updateHeader = (newHeader) => {
-        setProject({ ...project, header: newHeader });
-      };
-
-      const exportSurvey = () => {
-        try {
-          const readableSurvey = formatSurveyForEmail(project);
-          if (!window.emailjs) {
-            alert('EmailJS is not loaded. Please check your network and try again.');
-            return;
-          }
-          const templateParams = {
-            survey_data: readableSurvey,
-            to_email: 'accounting@yourdomain.com'
-          };
-          emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
-            .then(() => {
-              alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
-            })
-            .catch((error) => {
-              console.error('Failed to send email:', error);
-              alert('Failed to send survey. Check console for details.');
+        const SurveyApp = () => {
+            const [project, setProject] = useState({
+                id: uuidv4(),
+                timestamp: new Date().toISOString(),
+                header: 'Technology Integrator Survey - Lutron, Control4 & Locks',
+                floors: [],
+                equipmentRoom: null,
+                currentTab: 'lighting'
             });
-        } catch (e) {
-          console.error('Error exporting survey:', e);
-          alert('Failed to export survey. Check console for details.');
-        }
-      };
 
-      return (
-        <div className="max-w-4xl w-full mx-auto">
-          <ConfirmationModal
-            isOpen={modalState.isOpen}
-            message={modalState.message}
-            onConfirm={modalState.onConfirm}
-            onCancel={modalState.onCancel}
-          />
-          <div className="mb-4">
-            <input
-              type="text"
-              value={project.header}
-              onChange={(e) => updateHeader(e.target.value)}
-              className="text-xl sm:text-2xl font-bold border p-3 rounded w-full"
-              placeholder="Enter survey title"
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <button
-              className={`px-4 py-2 rounded w-full sm:w-auto ${project.currentTab === 'lighting' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              onClick={() => setProject({ ...project, currentTab: 'lighting' })}
-            >
-              Lighting
-            </button>
-            <button
-              className={`px-4 py-2 rounded w-full sm:w-auto ${project.currentTab === 'control4' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              onClick={() => setProject({ ...project, currentTab: 'control4' })}
-            >
-              Control4
-            </button>
-            <button
-              className={`px-4 py-2 rounded w-full sm:w-auto ${project.currentTab === 'locks' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              onClick={() => setProject({ ...project, currentTab: 'locks' })}
-            >
-              Locks
-            </button>
-          </div>
-          <div className="overflow-auto">
-            {project.floors.map((floor, idx) => (
-              <Floor
-                key={idx}
-                floor={floor}
-                index={idx}
-                updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
-                addRoom={() => {
-                  try {
-                    const newRoom = {
-                      name: '',
-                      lighting: { banks: [] },
-                      control4: {
-                        isEquipmentRoom: false,
-                        videoStream: { enabled: false, notes: '' },
-                        roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
-                        keypads: [],
-                        lights: { enabled: false, count: 0, devices: [] },
-                        shades: [],
-                        touchscreens: [],
-                        haloRemote: { enabled: false, color: 'Black', notes: '' }
-                      },
-                      locks: {
-                        enabled: project.currentTab === 'locks',
-                        locks: project.currentTab === 'locks' ? [{
-                          name: '',
-                          handing: 'Left Hand (LH)',
-                          lockType: 'Cylindrical Latch',
-                          lockFunction: 'Office',
-                          finish: 'Satin Chrome (626)',
-                          keyway: 'Schlage C',
-                          doorType: 'Wood',
-                          doorThickness: '1-3/4"',
-                          backset: '2-3/4"',
-                          keying: 'None',
-                          fireRating: 'None',
-                          adaCompliance: 'None',
-                          leverStyle: 'None',
-                          notes: ''
-                        }] : []
-                      }
+            const [modalState, setModalState] = useState({
+                isOpen: false,
+                message: '',
+                onConfirm: () => { },
+                onCancel: () => { }
+            });
+
+            const floorRefs = useRef([]);
+
+            useEffect(() => {
+                if (window.emailjs) {
+                    emailjs.init('tD7k4sRjN8tewRNTb');
+                    console.log('EmailJS initialized');
+                } else {
+                    console.error('EmailJS script not loaded');
+                }
+            }, []);
+
+            useEffect(() => {
+                try {
+                    const savedSurvey = localStorage.getItem('survey');
+                    if (savedSurvey) {
+                        setProject(JSON.parse(savedSurvey));
+                    }
+                } catch (e) {
+                    console.error('Failed to load survey from localStorage:', e);
+                }
+            }, []);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem('survey', JSON.stringify(project));
+                } catch (e) {
+                    console.error('Failed to save survey to localStorage:', e);
+                }
+            }, [project]);
+
+            useEffect(() => {
+                console.log('Project floors updated:', project.floors);
+            }, [project.floors]);
+
+            const showConfirmModal = ({ message, onConfirm, onCancel }) => {
+                setModalState({
+                    isOpen: true,
+                    message,
+                    onConfirm: () => {
+                        onConfirm();
+                        setModalState({ isOpen: false, message: '', onConfirm: () => { }, onCancel: () => { } });
+                    },
+                    onCancel: () => {
+                        onCancel();
+                        setModalState({ isOpen: false, message: '', onConfirm: () => { }, onCancel: () => { } });
+                    }
+                });
+            };
+
+            const addFloor = () => {
+                try {
+                    floorRefs.current.push(React.createRef());
+                    const newFloors = [...project.floors, { name: '', rooms: [] }];
+                    setProject({ ...project, floors: newFloors });
+                    setTimeout(() => {
+                        if (floorRefs.current[floorRefs.current.length - 1]?.current) {
+                            floorRefs.current[floorRefs.current.length - 1].current.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }, 0);
+                } catch (e) {
+                    console.error('Error adding floor:', e);
+                    alert('Failed to add floor. Check console for details.');
+                }
+            };
+
+            const updateFloor = (floorIdx, updatedFloor) => {
+                try {
+                    const newFloors = [...project.floors];
+                    newFloors[floorIdx] = updatedFloor;
+                    setProject({ ...project, floors: newFloors });
+                } catch (e) {
+                    console.error('Error updating floor:', e);
+                    alert('Failed to update floor. Check console for details.');
+                }
+            };
+
+            const deleteFloor = (floorIdx) => {
+                try {
+                    const newFloors = project.floors.filter((_, i) => i !== floorIdx);
+                    const newEquipmentRoom = project.equipmentRoom && project.equipmentRoom.floorIdx === floorIdx ? null : project.equipmentRoom;
+                    floorRefs.current.splice(floorIdx, 1);
+                    setProject({ ...project, floors: newFloors, equipmentRoom: newEquipmentRoom });
+                } catch (e) {
+                    console.error('Error deleting floor:', e);
+                    alert('Failed to delete floor. Check console for details.');
+                }
+            };
+
+            const copyFloor = (floorIdx) => {
+                try {
+                    const newFloors = [...project.floors];
+                    newFloors.splice(floorIdx + 1, 0, { ...project.floors[floorIdx] });
+                    floorRefs.current.splice(floorIdx + 1, 0, React.createRef());
+                    setProject({ ...project, floors: newFloors });
+                    setTimeout(() => {
+                        if (floorRefs.current[floorIdx + 1]?.current) {
+                            floorRefs.current[floorIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }, 0);
+                } catch (e) {
+                    console.error('Error copying floor:', e);
+                    alert('Failed to copy floor. Check console for details.');
+                }
+            };
+
+            const updateHeader = (newHeader) => {
+                setProject({ ...project, header: newHeader });
+            };
+
+            const exportSurvey = () => {
+                try {
+                    const readableSurvey = formatSurveyForEmail(project);
+                    if (!window.emailjs) {
+                        alert('EmailJS is not loaded. Please check your network and try again.');
+                        return;
+                    }
+                    const templateParams = {
+                        survey_data: readableSurvey,
+                        to_email: 'accounting@yourdomain.com'
                     };
-                    updateFloor(idx, {
-                      ...floor,
-                      rooms: [...floor.rooms, newRoom]
-                    });
-                  } catch (e) {
-                    console.error('Error adding room:', e);
-                    alert('Failed to add room. Check console for details.');
-                  }
-                }}
-                deleteFloor={() => deleteFloor(idx)}
-                copyFloor={() => copyFloor(idx)}
-                currentTab={project.currentTab}
-                floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
-                showConfirmModal={showConfirmModal}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto"
-              onClick={addFloor}
-            >
-              + Add Floor
-            </button>
-            <button
-              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 w-full sm:w-auto"
-              onClick={exportSurvey}
-            >
-              Send for Quoting
-            </button>
-          </div>
-        </div>
-      );
-    };
+                    emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
+                        .then(() => {
+                            alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
+                        })
+                        .catch((error) => {
+                            console.error('Failed to send email:', error);
+                            alert('Failed to send survey. Check console for details.');
+                        });
+                } catch (e) {
+                    console.error('Error exporting survey:', e);
+                    alert('Failed to export survey. Check console for details.');
+                }
+            };
 
-    class ErrorBoundary extends React.Component {
-      state = { hasError: false, error: null };
+            return (
+                <div className="max-w-4xl w-full mx-auto">
+                    <ConfirmationModal
+                        isOpen={modalState.isOpen}
+                        message={modalState.message}
+                        onConfirm={modalState.onConfirm}
+                        onCancel={modalState.onCancel}
+                    />
+                    <div className="mb-4">
+                        <input
+                            type="text"
+                            value={project.header}
+                            onChange={(e) => updateHeader(e.target.value)}
+                            className="text-xl sm:text-2xl font-bold border p-3 rounded w-full"
+                            placeholder="Enter survey title"
+                        />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                        <button
+                            className={`px-4 py-2 rounded w-full sm:w-auto ${project.currentTab === 'lighting' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setProject({ ...project, currentTab: 'lighting' })}
+                        >
+                            Lighting
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded w-full sm:w-auto ${project.currentTab === 'control4' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setProject({ ...project, currentTab: 'control4' })}
+                        >
+                            Control4
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded w-full sm:w-auto ${project.currentTab === 'locks' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setProject({ ...project, currentTab: 'locks' })}
+                        >
+                            Locks
+                        </button>
+                    </div>
+                    <div className="overflow-auto">
+                        {project.floors.map((floor, idx) => (
+                            <Floor
+                                key={idx}
+                                floor={floor}
+                                index={idx}
+                                updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
+                                addRoom={() => {
+                                    try {
+                                        const newRoom = {
+                                            name: '',
+                                            lighting: { banks: [] },
+                                            control4: {
+                                                isEquipmentRoom: false,
+                                                videoStream: { enabled: false, notes: '' },
+                                                roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
+                                                keypads: [],
+                                                lights: { enabled: false, count: 0, devices: [] },
+                                                shades: [],
+                                                touchscreens: [],
+                                                haloRemote: { enabled: false, color: 'Black', notes: '' }
+                                            },
+                                            locks: {
+                                                enabled: project.currentTab === 'locks',
+                                                locks: project.currentTab === 'locks' ? [{
+                                                    name: '',
+                                                    handing: 'Left Hand (LH)',
+                                                    lockType: 'Cylindrical Latch',
+                                                    lockFunction: 'Office',
+                                                    finish: 'Satin Chrome (626)',
+                                                    keyway: 'Schlage C',
+                                                    doorType: 'Wood',
+                                                    doorThickness: '1-3/4"',
+                                                    backset: '2-3/4"',
+                                                    keying: 'None',
+                                                    fireRating: 'None',
+                                                    adaCompliance: 'None',
+                                                    leverStyle: 'None',
+                                                    notes: ''
+                                                }] : []
+                                            }
+                                        };
+                                        updateFloor(idx, {
+                                            ...floor,
+                                            rooms: [...floor.rooms, newRoom]
+                                        });
+                                    } catch (e) {
+                                        console.error('Error adding room:', e);
+                                        alert('Failed to add room. Check console for details.');
+                                    }
+                                }}
+                                deleteFloor={() => deleteFloor(idx)}
+                                copyFloor={() => copyFloor(idx)}
+                                currentTab={project.currentTab}
+                                floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
+                                showConfirmModal={showConfirmModal}
+                            />
+                        ))}
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <button
+                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto"
+                            onClick={addFloor}
+                        >
+                            + Add Floor
+                        </button>
+                        <button
+                            className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 w-full sm:w-auto"
+                            onClick={exportSurvey}
+                        >
+                            Send for Quoting
+                        </button>
+                    </div>
+                </div>
+            );
+        };
 
-      static getDerivedStateFromError(error) {
-        return { hasError: true, error };
-      }
+        class ErrorBoundary extends React.Component {
+            state = { hasError: false, error: null };
 
-      componentDidCatch(error, errorInfo) {
-        console.error('ErrorBoundary caught:', error, errorInfo);
-      }
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error };
+            }
 
-      render() {
-        if (this.state.hasError) {
-          return <h1>Something went wrong: {this.state.error?.message}</h1>;
+            componentDidCatch(error, errorInfo) {
+                console.error('ErrorBoundary caught:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return <h1>Something went wrong: {this.state.error?.message}</h1>;
+                }
+                return this.props.children;
+            }
         }
-        return this.props.children;
-      }
-    }
 
-    ReactDOM.render(
-      <ErrorBoundary>
-        <SurveyApp />
-      </ErrorBoundary>,
-      document.getElementById('root')
-    );
-        </script>
-    </body>
+        ReactDOM.render(
+            <ErrorBoundary>
+                <SurveyApp />
+            </ErrorBoundary>,
+            document.getElementById('root')
+        );
+    </script>
+</body>
 </html>
