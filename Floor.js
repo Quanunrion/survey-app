@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js'; 
+import React, { useEffect, useRef } from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js';
 import { SwitchBank } from './Lighting.js';
 import Control4Room from './Control4.js';
 import LocksRoom from './Locks.js';

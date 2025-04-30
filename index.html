@@ -21,13 +21,20 @@
         import { uuidv4 } from './constants.js';
 
         // Enhanced error handling for module loading
-        window.addEventListener('error', (event) => {
+        window.addEventListener('error', async (event) => {
           if (event.message.includes('Failed to fetch') || event.message.includes('SyntaxError')) {
             console.error('Module loading error:', event);
             const failedFile = event.filename || 'unknown file';
+            let responseContent = 'No response content available';
+            try {
+              const response = await fetch(failedFile, { method: 'GET' });
+              responseContent = await response.text();
+              console.error('Response content for', failedFile, ':', responseContent.slice(0, 200));
+            } catch (fetchError) {
+              console.error('Failed to fetch response content:', fetchError);
+            }
             console.error('Check if the following files exist in the repository root with correct case: Floor.js, ConfirmationModal.js, utils.js, constants.js, Lighting.js, Control4.js, Locks.js, uuid.js');
-            console.error('Response content (first 100 chars):', event.error?.message || 'No response content available');
-            alert(`Failed to load script: ${failedFile}. Ensure all required JavaScript files (Floor.js, ConfirmationModal.js, utils.js, constants.js, Lighting.js, Control4.js, Locks.js, uuid.js) are in the repository root with correct case. Check console for details.`);
+            alert(`Failed to load script: ${failedFile}. Ensure all required JavaScript files (Floor.js, ConfirmationModal.js, utils.js, constants.js, Lighting.js, Control4.js, Locks.js, uuid.js) are in the repository root with correct case. Check console for response content and details.`);
           }
         });
 
