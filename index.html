@@ -20,12 +20,14 @@
         import { formatSurveyForEmail } from './utils.js';
         import { uuidv4 } from './constants.js';
 
-        // Error handling for module loading
+        // Enhanced error handling for module loading
         window.addEventListener('error', (event) => {
           if (event.message.includes('Failed to fetch') || event.message.includes('SyntaxError')) {
             console.error('Module loading error:', event);
             const failedFile = event.filename || 'unknown file';
-            alert(`Failed to load script: ${failedFile}. Ensure Floor.js, ConfirmationModal.js, utils.js, and constants.js are in the repository root with correct case.`);
+            console.error('Check if the following files exist in the repository root with correct case: Floor.js, ConfirmationModal.js, utils.js, constants.js, Lighting.js, Control4.js, Locks.js, uuid.js');
+            console.error('Response content (first 100 chars):', event.error?.message || 'No response content available');
+            alert(`Failed to load script: ${failedFile}. Ensure all required JavaScript files (Floor.js, ConfirmationModal.js, utils.js, constants.js, Lighting.js, Control4.js, Locks.js, uuid.js) are in the repository root with correct case. Check console for details.`);
           }
         });
 
