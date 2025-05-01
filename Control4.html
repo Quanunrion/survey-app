@@ -125,7 +125,7 @@
                       type="radio"
                       name={`audioType-${floorIdx}-${roomIdx}`}
                       checked={room.control4.roomAudio.wireless}
-                      onChange={() => updateControl4({ roomAudio lookups: { ...room.control4.roomAudio, wireless: true } })}
+                      onChange={() => updateControl4({ roomAudio: { ...room.control4.roomAudio, wireless: true } })}
                       className="mr-2"
                     />
                     Wireless
