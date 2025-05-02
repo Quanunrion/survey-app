@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locks Survey</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/uuid@9.0.1/dist/umd/uuid.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="root" className="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
+    <script type="text/babel">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+          if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+              var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+              var firstSheetName = workbook.SheetNames[0];
+              var worksheet = workbook.Sheets[firstSheetName];
+              var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+              var filteredData = jsonData.filter(row => row.some(filledCell));
+              var headerRowIndex = filteredData.findIndex((row, index) =>
+                row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+              );
+              if (headerRowIndex === -1 || headerRowIndex > 25) {
+                headerRowIndex = 0;
+              }
+              var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+              csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+              return csv;
+            } catch (e) {
+              console.error(e);
+              return "";
+            }
+          }
+          return gk_fileData[filename] || "";
+        }
+
+        const generateFallbackId = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
+        const uuidv4 = window.uuidv4 || generateFallbackId;
+
+        const lockTypes = ['Mortise', 'Cylindrical', 'Deadbolt', 'Exit Device', 'Electrified'];
+        const lockFunctions = ['Storeroom', 'Office', 'Classroom', 'Entrance', 'Privacy', 'Passage'];
+        const handingOptions = ['Left Hand (LH)', 'Right Hand (RH)', 'Left Hand Reverse (LHR)', 'Right Hand Reverse (RHR)'];
+        const finishes = ['626 Satin Chrome', '605 Bright Brass', '612 Satin Bronze', '613 Oil Rubbed Bronze', '625 Bright Chrome'];
+        const keyways = ['Schlage C', 'Schlage E', 'Yale GA', 'Corbin 60', 'None'];
+        const doorTypes = ['Wood', 'Metal', 'Glass', 'Hollow Core'];
+        const doorThicknesses = ['1-3/8"', '1-3/4"', '2"', '2-1/4"'];
+        const backsets = ['2-3/4"', '2-3/8"', '5"'];
+        const keyingOptions = ['Keyed Different (KD)', 'Keyed Alike (KA)', 'Master Keyed (MK)', 'None'];
+        const fireRatings = ['None', '20 Min', '45 Min', '60 Min', '90 Min'];
+        const adaOptions = ['Compliant', 'Non-Compliant'];
+        const leverStyles = ['Rhodes', 'Athens', 'Sparta', 'Tubular', 'None'];
+
+        const LockDetails = ({ locks, floorIdx, roomIdx, updateLocks }) => (
+          <div className="mt-2">
+            <label className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                checked={locks.enabled}
+                onChange={(e) => updateLocks({ ...locks, enabled: e.target.checked })}
+                className="mr-2"
+              />
+              Enable Locks for this Room
+            </label>
+            {locks.enabled && (
+              <div>
+                {locks.locks.map((lock, lockIdx) => (
+                  <div key={lockIdx} className="ml-4 mt-2 p-4 bg-gray-100 rounded">
+                    <input
+                      type="text"
+                      value={lock.name}
+                      onChange={(e) => {
+                        const newLocks = [...locks.locks];
+                        newLocks[lockIdx] = { ...lock, name: e.target.value };
+                        updateLocks({ ...locks, locks: newLocks });
+                      }}
+                      placeholder={`Lock ${lockIdx + 1}`}
+                      className="border p-3 rounded w-full mb-2"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Lock Type</label>
+                        <select
+                          value={lock.lockType}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, lockType: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {lockTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Lock Function</label>
+                        <select
+                          value={lock.lockFunction}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, lockFunction: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {lockFunctions.map((func) => (
+                            <option key={func} value={func}>{func}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Handing</label>
+                        <select
+                          value={lock.handing}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, handing: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {handingOptions.map((hand) => (
+                            <option key={hand} value={hand}>{hand}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Finish</label>
+                        <select
+                          value={lock.finish}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, finish: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {finishes.map((finish) => (
+                            <option key={finish} value={finish}>{finish}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Keyway</label>
+                        <select
+                          value={lock.keyway}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, keyway: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {keyways.map((keyway) => (
+                            <option key={keyway} value={keyway}>{keyway}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Door Type</label>
+                        <select
+                          value={lock.doorType}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, doorType: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {doorTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Door Thickness</label>
+                        <select
+                          value={lock.doorThickness}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, doorThickness: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {doorThicknesses.map((thickness) => (
+                            <option key={thickness} value={thickness}>{thickness}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Backset</label>
+                        <select
+                          value={lock.backset}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, backset: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {backsets.map((backset) => (
+                            <option key={backset} value={backset}>{backset}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Keying</label>
+                        <select
+                          value={lock.keying}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, keying: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {keyingOptions.map((keying) => (
+                            <option key={keying} value={keying}>{keying}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Fire Rating</label>
+                        <select
+                          value={lock.fireRating}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, fireRating: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {fireRatings.map((rating) => (
+                            <option key={rating} value={rating}>{rating}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">ADA Compliance</label>
+                        <select
+                          value={lock.adaCompliance}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, adaCompliance: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {adaOptions.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Lever Style</label>
+                        <select
+                          value={lock.leverStyle}
+                          onChange={(e) => {
+                            const newLocks = [...locks.locks];
+                            newLocks[lockIdx] = { ...lock, leverStyle: e.target.value };
+                            updateLocks({ ...locks, locks: newLocks });
+                          }}
+                          className="border p-3 rounded w-full"
+                        >
+                          {leverStyles.map((style) => (
+                            <option key={style} value={style}>{style}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <label className="block text-sm font-medium mb-1 mt-2">Notes</label>
+                    <textarea
+                      value={lock.notes}
+                      onChange={(e) => {
+                        const newLocks = [...locks.locks];
+                        newLocks[lockIdx] = { ...lock, notes: e.target.value };
+                        updateLocks({ ...locks, locks: newLocks });
+                      }}
+                      placeholder="Additional Notes"
+                      className="border p-3 rounded w-full"
+                    />
+                    <button
+                      className="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                      onClick={() => {
+                        const newLocks = locks.locks.filter((_, i) => i !== lockIdx);
+                        updateLocks({ ...locks, locks: newLocks });
+                      }}
+                    >
+                      Delete Lock
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="mt-2 bg-blue-400 text-white px-3 py-1 rounded hover:bg-blue-500"
+                  onClick={() => updateLocks({
+                    ...locks,
+                    locks: [...locks.locks, {
+                      name: '',
+                      lockType: 'Mortise',
+                      lockFunction: 'Storeroom',
+                      handing: 'Left Hand (LH)',
+                      finish: '626 Satin Chrome',
+                      keyway: 'Schlage C',
+                      doorType: 'Wood',
+                      doorThickness: '1-3/4"',
+                      backset: '2-3/4"',
+                      keying: 'Keyed Different (KD)',
+                      fireRating: 'None',
+                      adaCompliance: 'Compliant',
+                      leverStyle: 'Rhodes',
+                      notes: ''
+                    }]
+                  })}
+                >
+                  + Add Lock
+                </button>
+              </div>
+            )}
+          </div>
+        );
+
+        const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, roomRef }) => (
+          <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow overflow-x-hidden">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
+              <input
+                type="text"
+                value={room.name}
+                onFocus={() => updateRoom({ ...room, name: '' })}
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  updateRoom({ ...room, name: value || `Room ${roomIdx + 1}` });
+                }}
+                onChange={(e) => updateRoom({ ...room, name: e.target.value })}
+                placeholder={`Room ${roomIdx + 1}`}
+                className="text-md font-semibold border p-3 rounded w-full sm:flex-1"
+              />
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 active:bg-yellow-700"
+                  onClick={() => {
+                    console.log(`Copying room ${roomIdx} on floor ${floorIdx}`);
+                    copyRoom();
+                  }}
+                >
+                  Copy Room
+                </button>
+                <button
+                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 active:bg-red-700"
+                  onClick={() => {
+                    console.log(`Deleting room ${roomIdx} on floor ${floorIdx}`);
+                    deleteRoom();
+                  }}
+                >
+                  Delete Room
+                </button>
+              </div>
+            </div>
+            <LockDetails
+              locks={room.locks}
+              floorIdx={floorIdx}
+              roomIdx={roomIdx}
+              updateLocks={(updatedLocks) => updateRoom({ ...room, locks: updatedLocks })}
+            />
+          </div>
+        );
+
+        const Floor = ({ floor, index, updateFloor, addRoom, deleteFloor, copyFloor, floorRef }) => {
+          const roomRefs = React.useRef([]);
+          React.useEffect(() => {
+            roomRefs.current[index] = roomRefs.current[index] || Array(floor.rooms.length).fill().map(() => React.createRef());
+          }, [index, floor.rooms.length]);
+
+          return (
+            <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow overflow-x-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
+                <input
+                  type="text"
+                  value={floor.name}
+                  onFocus={() => updateFloor({ ...floor, name: '' })}
+                  onBlur={(e) => {
+                    const value = e.target.value.trim();
+                    updateFloor({ ...floor, name: value || `Floor ${index + 1}` });
+                  }}
+                  onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
+                  placeholder={`Floor ${index + 1}`}
+                  className="text-lg font-bold border p-3 rounded w-full sm:flex-1"
+                />
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <button
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 active:bg-yellow-700"
+                    onClick={() => {
+                      console.log(`Copying floor ${index}`);
+                      copyFloor(index);
+                    }}
+                  >
+                    Copy Floor
+                  </button>
+                  <button
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 active:bg-red-700"
+                    onClick={() => {
+                      console.log(`Deleting floor ${index}`);
+                      deleteFloor(index);
+                    }}
+                  >
+                    Delete Floor
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-auto">
+                {floor.rooms.map((room, roomIdx) => (
+                  <Room
+                    key={roomIdx}
+                    room={room}
+                    floorIdx={index}
+                    roomIdx={roomIdx}
+                    updateRoom={(updatedRoom) => {
+                      const newRooms = [...floor.rooms];
+                      newRooms[roomIdx] = updatedRoom;
+                      updateFloor({ ...floor, rooms: newRooms });
+                    }}
+                    deleteRoom={() => {
+                      console.log(`Deleting room ${roomIdx} on floor ${index}`);
+                      if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                        const newRooms = floor.rooms.filter((_, i) => i !== roomIdx);
+                        roomRefs.current[index].splice(roomIdx, 1);
+                        updateFloor({ ...floor, rooms: newRooms });
+                      } else {
+                        console.log('Delete room cancelled');
+                      }
+                    }}
+                    copyRoom={() => {
+                      console.log(`Copying room ${roomIdx} on floor ${index}`);
+                      if (window.confirm(`Copy ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                        const newRooms = [...floor.rooms];
+                        newRooms.splice(roomIdx + 1, 0, { ...room });
+                        roomRefs.current[index].splice(roomIdx + 1, 0, React.createRef());
+                        updateFloor({ ...floor, rooms: newRooms });
+                        setTimeout(() => {
+                          if (roomRefs.current[index][roomIdx + 1]?.current) {
+                            roomRefs.current[index][roomIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }, 0);
+                      } else {
+                        console.log('Copy room cancelled');
+                      }
+                    }}
+                    roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
+                  />
+                ))}
+              </div>
+              <button
+                className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
+                onClick={addRoom}
+              >
+                + Add Room
+              </button>
+            </div>
+          );
+        };
+
+        const SurveyApp = () => {
+          const [project, setProject] = React.useState({
+            id: uuidv4(),
+            timestamp: new Date().toISOString(),
+            header: 'Technology Integrator Survey - Locks',
+            floors: [],
+            equipmentRoom: null
+          });
+
+          const floorRefs = React.useRef([]);
+
+          React.useEffect(() => {
+            if (window.emailjs) {
+              emailjs.init('tD7k4sRjN8tewRNTb');
+              console.log('EmailJS initialized');
+            } else {
+              console.error('EmailJS script not loaded');
+            }
+          }, []);
+
+          React.useEffect(() => {
+            try {
+              const savedSurvey = localStorage.getItem('survey');
+              if (savedSurvey) {
+                setProject(JSON.parse(savedSurvey));
+              }
+            } catch (e) {
+              console.error('Failed to load survey from localStorage:', e);
+            }
+          }, []);
+
+          React.useEffect(() => {
+            try {
+              localStorage.setItem('survey', JSON.stringify(project));
+            } catch (e) {
+              console.error('Failed to save survey to localStorage:', e);
+            }
+          }, [project]);
+
+          const addFloor = () => {
+            try {
+              floorRefs.current.push(React.createRef());
+              setProject({
+                ...project,
+                floors: [...project.floors, {
+                  name: '',
+                  rooms: [{
+                    name: '',
+                    control4: {
+                      isEquipmentRoom: false,
+                      videoStream: { enabled: false, notes: '' },
+                      roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
+                      keypads: [],
+                      lights: { enabled: false, count: 0, devices: [] },
+                      shades: [],
+                      touchscreens: [],
+                      haloRemote: { enabled: false, color: 'Black', notes: '' }
+                    },
+                    locks: { enabled: false, locks: [] },
+                    lighting: { banks: [] }
+                  }]
+                }]
+              });
+              setTimeout(() => {
+                if (floorRefs.current[floorRefs.current.length - 1]?.current) {
+                  floorRefs.current[floorRefs.current.length - 1].current.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 0);
+            } catch (e) {
+              console.error('Error adding floor:', e);
+              alert('Failed to add floor. Check console for details.');
+            }
+          };
+
+          const updateFloor = (floorIdx, updatedFloor) => {
+            try {
+              const newFloors = [...project.floors];
+              newFloors[floorIdx] = updatedFloor;
+              setProject({ ...project, floors: newFloors });
+            } catch (e) {
+              console.error('Error updating floor:', e);
+              alert('Failed to update floor. Check console for details.');
+            }
+          };
+
+          const deleteFloor = (floorIdx) => {
+            if (window.confirm(`Delete ${project.floors[floorIdx].name || `Floor ${floorIdx + 1}`} and all its rooms?`)) {
+              try {
+                console.log('State before delete:', project.floors);
+                const newFloors = project.floors.filter((_, i) => i !== floorIdx);
+                const newEquipmentRoom = project.equipmentRoom && project.equipmentRoom.floorIdx === floorIdx ? null : project.equipmentRoom;
+                floorRefs.current.splice(floorIdx, 1);
+                setProject({ ...project, floors: newFloors, equipmentRoom: newEquipmentRoom });
+                console.log('State after delete:', newFloors);
+              } catch (e) {
+                console.error('Error deleting floor:', e);
+                alert('Failed to delete floor. Check console for details.');
+              }
+            } else {
+              console.log('Delete floor cancelled');
+            }
+          };
+
+          const copyFloor = (floorIdx) => {
+            if (window.confirm(`Copy ${project.floors[floorIdx].name || `Floor ${floorIdx + 1}`} and all its rooms?`)) {
+              try {
+                console.log('State before copy:', project.floors);
+                const newFloors = [...project.floors];
+                newFloors.splice(floorIdx + 1, 0, { ...project.floors[floorIdx] });
+                floorRefs.current.splice(floorIdx + 1, 0, React.createRef());
+                setProject({ ...project, floors: newFloors });
+                setTimeout(() => {
+                  if (floorRefs.current[floorIdx + 1]?.current) {
+                    floorRefs.current[floorIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 0);
+                console.log('State after copy:', newFloors);
+              } catch (e) {
+                console.error('Error copying floor:', e);
+                alert('Failed to copy floor. Check console for details.');
+              }
+            } else {
+              console.log('Copy floor cancelled');
+            }
+          };
+
+          const updateHeader = (newHeader) => {
+            setProject({ ...project, header: newHeader });
+          };
+
+          const formatSurveyForEmail = (project) => {
+            let csv = 'Quantity,Model,Location,Manufacturer,System,Custom Field 12\n';
+            const equipmentRack = [];
+            let totalDevices = 0;
+            let audioStreams = 0;
+            let totalZones = 0;
+            let subAmps = 0;
+            let controllerCount = 0;
+
+            const deviceTypes = [
+              'Dimmer', 'Switch', 'Keypad', 'Fan', 'Companion Dimmer', 'Companion Switch', 'Remote Keypad', 'Pico Remote'
+            ];
+            const colorCodes = {
+              'White': 'WH', 'Light Almond': 'LA', 'Ivory': 'IV', 'Black': 'BL', 'Brilliant White': 'BW',
+              'Glacier White': 'GL', 'Snow': 'SW', 'Architectural White': 'RW', 'Lunar Grey': 'LG', 'Mist': 'MI',
+              'Pebble': 'PB', 'Cobblestone': 'CS', 'Biscuit': 'BI', 'Slate': 'SL', 'Sand': 'SD', 'Taupe': 'TP',
+              'Pumice': 'PM', 'Clay': 'CY', 'Sage': 'SA', 'Espresso': 'EP', 'Truffle': 'TF', 'Deep Sea': 'DE',
+              'Signal Red': 'SR', 'Midnight': 'MN'
+            };
+            const modelCodes = {
+              'Switch': 'RRST-8ANS-XX',
+              'Dimmer': 'RRST-PRO-N-XX',
+              'Keypad': 'RRST-W4B-XX',
+              'Fan': 'RRD-2ANF-XX',
+              'Companion Dimmer': 'RRST-RD-XX',
+              'Companion Switch': 'RRST-RS-XX',
+              'Remote Keypad': 'RRST-W4B-XX',
+              'Pico Remote': 'PJ2-4B-GWH-L31'
+            };
+
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                const c4 = room.control4;
+                totalDevices += c4.keypads.length;
+                totalDevices += c4.touchscreens.length;
+                totalDevices += c4.haloRemote.enabled ? 1 : 0;
+                totalDevices += c4.lights.enabled ? c4.lights.count : 0;
+                totalDevices += c4.shades.length;
+                if (c4.videoStream.enabled) totalDevices += 1;
+                if (c4.roomAudio.enabled) {
+                  audioStreams += 1;
+                  const dist = c4.roomAudio.distribution;
+                  const zones = dist === 'Mono' ? 1 : dist === 'Stereo' ? 2 : parseInt(dist.split('.')[0]) + (dist.includes('.1') || dist.includes('.2') ? 1 : 0);
+                  totalZones += zones;
+                  if (dist.includes('.1') || dist.includes('.2')) subAmps += 1;
+                  totalDevices += zones;
+                }
+                if (room.locks.enabled) {
+                  const floorName = floor.name || `Floor ${floorIdx + 1}`;
+                  const roomName = room.name || `Room ${roomIdx + 1}`;
+                  const location = `${floorName}: ${roomName}`;
+                  room.locks.locks.forEach((lock, lockIdx) => {
+                    const lockName = lock.name || `Lock ${lockIdx + 1}`;
+                    const lockLocation = `${location}: ${lockName}`;
+                    const notes = [
+                      `Handing: ${lock.handing}`,
+                      `Lock Type: ${lock.lockType}`,
+                      `Function: ${lock.lockFunction}`,
+                      `Finish: ${lock.finish}`,
+                      `Keyway: ${lock.keyway}`,
+                      `Door Type: ${lock.doorType}`,
+                      `Door Thickness: ${lock.doorThickness}`,
+                      `Backset: ${lock.backset}`,
+                      `Keying: ${lock.keying}`,
+                      `Fire Rating: ${lock.fireRating}`,
+                      `ADA Compliance: ${lock.adaCompliance}`,
+                      `Lever Style: ${lock.leverStyle}`,
+                      lock.notes
+                    ].filter(Boolean).join('; ');
+                    csv += `1,${lock.lockType.replace(/\s+/g, '-')},"${lockLocation}",Generic,Lock System,"${notes}"\n`;
+                  });
+                }
+                room.lighting.banks.forEach((bank, bankIdx) => {
+                  const floorName = floor.name || `Floor ${floorIdx + 1}`;
+                  const roomName = room.name || `Room ${roomIdx + 1}`;
+                  const bankName = bank.name || `Switch Bank ${bankIdx + 1}`;
+                  const location = `${floorName}: ${roomName}: ${bankName}`;
+                  bank.devices.forEach((device, devIdx) => {
+                    let model = modelCodes[device.type] || 'UNKNOWN';
+                    if (device.type !== 'Pico Remote') {
+                      model = model.replace('XX', colorCodes[bank.color] || 'WH');
+                    }
+                    csv += `1,${model},"${location}",Lutron,Lighting System,"Device ${devIdx + 1}: ${device.type}"\n`;
+                  });
+                });
+              });
+            });
+
+            const videoStreamRooms = [];
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                if (room.control4.videoStream.enabled) {
+                  videoStreamRooms.push({ floorIdx, roomIdx });
+                }
+              });
+            });
+            totalDevices += videoStreamRooms.length;
+            const needsCore5 = totalDevices > 45;
+            const equipmentRoom = project.equipmentRoom;
+            const equipmentRoomLocation = equipmentRoom ? `${project.floors[equipmentRoom.floorIdx].name || `Floor ${equipmentRoom.floorIdx + 1}`}: ${project.floors[equipmentRoom.floorIdx].rooms[equipmentRoom.roomIdx].name || `Room ${equipmentRoom.roomIdx + 1}`}` : 'Equipment Rack';
+
+            videoStreamRooms.forEach((room, idx) => {
+              const { floorIdx, roomIdx } = room;
+              const roomName = project.floors[floorIdx].rooms[roomIdx].name || `Room ${roomIdx + 1}`;
+              const floorName = project.floors[floorIdx].name || `Floor ${floorIdx + 1}`;
+              const location = `${floorName}: ${roomName}`;
+              let model = 'EA-1';
+              if (equipmentRoom && equipmentRoom.floorIdx === floorIdx && equipmentRoom.roomIdx === roomIdx) {
+                model = needsCore5 ? 'EA-5' : 'EA-3';
+              } else if (idx === 1 && !needsCore5) {
+                model = 'EA-3';
+              } else if (idx === 1 && needsCore5) {
+                model = 'EA-1';
+              }
+              controllerCount += 1;
+              csv += `1,${model},"${location}",Control4,Smart Home System,"Video Stream Controller"\n`;
+            });
+
+            if (needsCore5 && (!equipmentRoom || !videoStreamRooms.some(r => r.floorIdx === equipmentRoom.floorIdx && r.roomIdx === equipmentRoom.roomIdx))) {
+              equipmentRack.push({ model: 'EA-5', quantity: 1, ru: 2, notes: 'Core 5 Controller' });
+              controllerCount += 1;
+            }
+
+            if (audioStreams > 0) {
+              if (audioStreams <= 8) {
+                equipmentRack.push({ model: 'TS-AMS8-V2', quantity: 1, ru: 2, notes: '8x8 Audio Matrix' });
+              } else if (audioStreams <= 16) {
+                equipmentRack.push({ model: 'TS-AMS-16', quantity: 1, ru: 3, notes: '16x16 Audio Matrix' });
+              } else {
+                const matrices = Math.ceil(audioStreams / 8);
+                for (let i = 0; i < matrices; i++) {
+                  equipmentRack.push({ model: 'TS-AMS8-V2', quantity: 1, ru: 2, notes: '8x8 Audio Matrix' });
+                }
+              }
+            }
+
+            if (totalZones > 0) {
+              const ampsNeeded = Math.ceil(totalZones / 8);
+              for (let i = 0; i < ampsNeeded; i++) {
+                equipmentRack.push({ model: 'TS-PAMP8-125-V2', quantity: 1, ru: 2, notes: '8-Zone Amp' });
+              }
+              if (subAmps > 0) {
+                equipmentRack.push({ model: 'TS-SUBAMP700', quantity: subAmps, ru: 1 * subAmps, notes: 'Sub Amp' });
+              }
+            }
+
+            let totalRU = equipmentRack.reduce((sum, item) => sum + item.ru * item.quantity, 0);
+            totalRU = Math.ceil(totalRU / 10) * 10;
+            const rackModel = totalRU <= 24 ? 'RK-24U' : totalRU <= 42 ? 'RK-42U' : 'RK-48U';
+            equipmentRack.push({ model: rackModel, quantity: 1, ru: totalRU, notes: 'Equipment Rack' });
+
+            equipmentRack.forEach(item => {
+              csv += `${item.quantity},${item.model},"${equipmentRoomLocation}",Control4,Smart Home System,"${item.notes}"\n`;
+            });
+
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                const floorName = floor.name || `Floor ${floorIdx + 1}`;
+                const roomName = room.name || `Room ${roomIdx + 1}`;
+                const location = `${floorName}: ${roomName}`;
+                const c4 = room.control4;
+
+                c4.keypads.forEach((keypad, idx) => {
+                  csv += `1,C4-KP7,"${location}",Control4,Smart Home System,"Keypad ${idx + 1}: ${keypad.notes || ''}"\n`;
+                });
+
+                c4.touchscreens.forEach((screen, idx) => {
+                  const model = screen.size === '7"' ? 'C4-TS7' : 'C4-TS10';
+                  csv += `1,${model},"${location}",Control4,Smart Home System,"Touchscreen ${idx + 1}: ${screen.notes || ''}"\n`;
+                });
+
+                if (c4.haloRemote.enabled) {
+                  const model = c4.haloRemote.color === 'Black' ? 'C4-HALO-BK' : 'C4-HALO-SV';
+                  csv += `1,${model},"${location}",Control4,Smart Home System,"Halo Remote: ${c4.haloRemote.notes || ''}"\n`;
+                }
+
+                if (c4.lights.enabled) {
+                  c4.lights.devices.forEach((device, idx) => {
+                    csv += `1,C4-LIGHT,"${location}",Control4,Smart Home System,"Light ${idx + 1}: ${device.notes || ''}"\n`;
+                  });
+                }
+
+                c4.shades.forEach((shade, idx) => {
+                  csv += `1,C4-SHADE,"${location}",Control4,Smart Home System,"Shade ${idx + 1}: ${shade.notes || ''}"\n`;
+                });
+              });
+            });
+
+            return csv;
+          };
+
+          const exportSurvey = () => {
+            try {
+              const json = JSON.stringify(project, null, 2);
+              console.log('Exported Survey JSON:', json);
+
+              const readableSurvey = formatSurveyForEmail(project);
+              console.log('Formatted Email Content (CSV):', readableSurvey);
+
+              if (!window.emailjs) {
+                alert('EmailJS is not loaded. Please check your network and try again.');
+                return;
+              }
+
+              const templateParams = {
+                survey_data: readableSurvey,
+                to_email: 'accounting@yourdomain.com',
+              };
+
+              console.log('Template Params:', templateParams);
+
+              emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
+                .then((response) => {
+                  console.log('Email sent successfully:', response.status, response.text);
+                  alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
+                })
+                .catch((error) => {
+                  console.error('Failed to send email:', error);
+                  alert('Failed to send survey. Check console for details.');
+                });
+            } catch (e) {
+              console.error('Error exporting survey:', e);
+              alert('Failed to export survey. Check console for details.');
+            }
+          };
+
+          return (
+            <div className="max-w-4xl w-full mx-auto">
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={project.header}
+                  onChange={(e) => updateHeader(e.target.value)}
+                  className="text-xl sm:text-2xl font-bold border p-3 rounded w-full"
+                  placeholder="Enter survey title"
+                />
+              </div>
+              <div className="flex gap-2 mb-4">
+                <a
+                  href="Control4.html"
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                >
+                  Control4
+                </a>
+                <a
+                  href="Lighting.html"
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                >
+                  Lighting
+                </a>
+                <button
+                  className="px-4 py-2 rounded bg-blue-500 text-white"
+                >
+                  Locks
+                </button>
+              </div>
+              <div className="overflow-auto">
+                {project.floors.map((floor, idx) => (
+                  <Floor
+                    key={idx}
+                    floor={floor}
+                    index={idx}
+                    updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
+                    addRoom={() => {
+                      try {
+                        const newRoom = {
+                          name: '',
+                          control4: {
+                            isEquipmentRoom: false,
+                            videoStream: { enabled: false, notes: '' },
+                            roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
+                            keypads: [],
+                            lights: { enabled: false, count: 0, devices: [] },
+                            shades: [],
+                            touchscreens: [],
+                            haloRemote: { enabled: false, color: 'Black', notes: '' }
+                          },
+                          locks: { enabled: false, locks: [] },
+                          lighting: { banks: [] }
+                        };
+                        updateFloor(idx, {
+                          ...floor,
+                          rooms: [...floor.rooms, newRoom]
+                        });
+                      } catch (e) {
+                        console.error('Error adding room:', e);
+                        alert('Failed to add room. Check console for details.');
+                      }
+                    }}
+                    deleteFloor={() => deleteFloor(idx)}
+                    copyFloor={() => copyFloor(idx)}
+                    floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto"
+                  onClick={addFloor}
+                >
+                  + Add Floor
+                </button>
+                <button
+                  className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 w-full sm:w-auto"
+                  onClick={exportSurvey}
+                >
+                  Send for Quoting
+                </button>
+              </div>
+            </div>
+          );
+        };
+
+        class ErrorBoundary extends React.Component {
+          state = { hasError: false, error: null };
+
+          static getDerivedStateFromError(error) {
+            return { hasError: true, error };
+          }
+
+          componentDidCatch(error, errorInfo) {
+            console.error('ErrorBoundary caught:', error, errorInfo);
+          }
+
+          render() {
+            if (this.state.hasError) {
+              return (
+                <div className="p-4 bg-red-100 text-red-700 rounded">
+                  <h2>Something went wrong.</h2>
+                  <p>{this.state.error?.message || 'Unknown error'}</p>
+                  <p>Check the console for details and try refreshing the page.</p>
+                </div>
+              );
+            }
+            return this.props.children;
+          }
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+          <ErrorBoundary>
+            <SurveyApp />
+          </ErrorBoundary>
+        );
+    </script>
+</body>
+</html>
