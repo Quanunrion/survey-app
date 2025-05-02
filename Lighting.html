@@ -57,102 +57,91 @@
         const deviceTypes = [
           'Dimmer', 'Switch', 'Keypad', 'Fan', 'Companion Dimmer', 'Companion Switch', 'Remote Keypad', 'Pico Remote'
         ];
-        const bankColors = [
+        const colors = [
           'White', 'Light Almond', 'Ivory', 'Black', 'Brilliant White', 'Glacier White', 'Snow',
           'Architectural White', 'Lunar Grey', 'Mist', 'Pebble', 'Cobblestone', 'Biscuit', 'Slate',
           'Sand', 'Taupe', 'Pumice', 'Clay', 'Sage', 'Espresso', 'Truffle', 'Deep Sea', 'Signal Red', 'Midnight'
         ];
-        const colorCodes = {
-          'White': 'WH', 'Light Almond': 'LA', 'Ivory': 'IV', 'Black': 'BL', 'Brilliant White': 'BW',
-          'Glacier White': 'GL', 'Snow': 'SW', 'Architectural White': 'RW', 'Lunar Grey': 'LG', 'Mist': 'MI',
-          'Pebble': 'PB', 'Cobblestone': 'CS', 'Biscuit': 'BI', 'Slate': 'SL', 'Sand': 'SD', 'Taupe': 'TP',
-          'Pumice': 'PM', 'Clay': 'CY', 'Sage': 'SA', 'Espresso': 'EP', 'Truffle': 'TF', 'Deep Sea': 'DE',
-          'Signal Red': 'SR', 'Midnight': 'MN'
-        };
-        const modelCodes = {
-          'Switch': 'RRST-8ANS-XX',
-          'Dimmer': 'RRST-PRO-N-XX',
-          'Keypad': 'RRST-W4B-XX',
-          'Fan': 'RRD-2ANF-XX',
-          'Companion Dimmer': 'RRST-RD-XX',
-          'Companion Switch': 'RRST-RS-XX',
-          'Remote Keypad': 'RRST-W4B-XX',
-          'Pico Remote': 'PJ2-4B-GWH-L31'
-        };
 
-        const SwitchBank = ({ bank, floorIdx, roomIdx, bankIdx, updateBank, deleteBank, copyBank }) => (
-          <div className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-100 rounded overflow-x-hidden">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
-              <input
-                type="text"
-                value={bank.name}
-                onFocus={() => updateBank({ ...bank, name: '' })}
-                onBlur={(e) => {
-                  const value = e.target.value.trim();
-                  updateBank({ ...bank, name: value || `Switch Bank ${bankIdx + 1}` });
-                }}
-                onChange={(e) => updateBank({ ...bank, name: e.target.value })}
-                placeholder={`Switch Bank ${bankIdx + 1}`}
-                className="text-sm font-medium border p-3 rounded w-full sm:flex-1"
-              />
+        const SwitchBank = ({ bank, floorIdx, roomIdx, updateBank, deleteBank }) => (
+          <div className="ml-4 mt-2 p-4 bg-gray-100 rounded">
+            <input
+              type="text"
+              value={bank.name}
+              onChange={(e) => updateBank({ ...bank, name: e.target.value })}
+              placeholder={`Switch Bank ${bank.devices.length + 1}`}
+              className="border p-3 rounded w-full mb-2"
+            />
+            <div className="mb-2">
+              <label className="block text-sm font-medium mb-1">Color</label>
               <select
                 value={bank.color}
                 onChange={(e) => updateBank({ ...bank, color: e.target.value })}
-                className="border p-3 rounded w-full sm:w-40"
-                disabled={bank.devices.some(device => device.type === 'Pico Remote')}
+                className="border p-3 rounded w-full"
               >
-                {bankColors.map((color) => (
+                {colors.map((color) => (
                   <option key={color} value={color}>{color}</option>
                 ))}
               </select>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <button
-                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 active:bg-yellow-700"
-                  onClick={() => copyBank()}
-                >
-                  Copy Bank
-                </button>
-                <button
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 active:bg-red-700"
-                  onClick={() => deleteBank()}
-                >
-                  Delete Bank
-                </button>
-              </div>
             </div>
-            <div className="mb-2">
-              <label className="block">
-                Number of Devices in Bank:
-                <input
-                  type="number"
-                  value={bank.devices.length}
-                  onChange={(e) => {
-                    const count = parseInt(e.target.value) || 0;
-                    const devices = Array(count).fill().map((_, i) => bank.devices[i] || { type: 'Dimmer' });
-                    updateBank({ ...bank, devices });
-                  }}
-                  className="border p-3 rounded w-20 mt-1"
-                  min="0"
-                />
-              </label>
-              {bank.devices.map((device, devIdx) => (
-                <div key={devIdx} className="flex items-center mt-1 gap-2">
-                  <select
-                    value={device.type}
-                    onChange={(e) => {
-                      const newDevices = [...bank.devices];
-                      newDevices[devIdx] = { ...device, type: e.target.value };
+            {bank.devices.map((device, devIdx) => (
+              <div key={devIdx} className="mb-2">
+                <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">Device Type</label>
+                    <select
+                      value={device.type}
+                      onChange={(e) => {
+                        const newDevices = [...bank.devices];
+                        newDevices[devIdx] = { ...device, type: e.target.value };
+                        updateBank({ ...bank, devices: newDevices });
+                      }}
+                      className="border p-3 rounded w-full"
+                    >
+                      {deviceTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 h-fit self-end sm:self-auto"
+                    onClick={() => {
+                      const newDevices = bank.devices.filter((_, i) => i !== devIdx);
                       updateBank({ ...bank, devices: newDevices });
                     }}
-                    className="border p-3 rounded w-full"
                   >
-                    {deviceTypes.map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
+                    Delete Device
+                  </button>
+Backspace
                 </div>
-              ))}
-            </div>
+                <label className="block text-sm font-medium mb-1 mt-2">Notes</label>
+                <textarea
+                  value={device.notes}
+                  onChange={(e) => {
+                    const newDevices = [...bank.devices];
+                    newDevices[devIdx] = { ...device, notes: e.target.value };
+                    updateBank({ ...bank, devices: newDevices });
+                  }}
+                  placeholder="Device Notes"
+                  className="border p-3 rounded w-full"
+                />
+              </div>
+            ))}
+            <button
+              className="mt-2 bg-blue-400 text-white px-3 py-1 rounded hover:bg-blue-500"
+              onClick={() => updateBank({
+                ...bank,
+                devices: [...bank.devices, { type: 'Dimmer', notes: '' }]
+              })}
+            >
+              + Add Device
+            </button>
+            <button
+              className="mt-2 ml-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+              onClick={deleteBank}
+            >
+              Delete Bank
+            </button>
           </div>
         );
 
@@ -192,44 +181,32 @@
                 </button>
               </div>
             </div>
-            <div className="overflow-auto">
-              {room.lighting.banks.map((bank, bankIdx) => (
-                <SwitchBank
-                  key={bankIdx}
-                  bank={bank}
-                  floorIdx={floorIdx}
-                  roomIdx={roomIdx}
-                  bankIdx={bankIdx}
-                  updateBank={(updatedBank) => {
-                    const newBanks = [...room.lighting.banks];
-                    newBanks[bankIdx] = updatedBank;
-                    updateRoom({ ...room, lighting: { ...room.lighting, banks: newBanks } });
-                  }}
-                  deleteBank={() => {
-                    console.log(`Deleting bank ${bankIdx} in room ${roomIdx} on floor ${floorIdx}`);
-                    if (window.confirm(`Delete ${bank.name || `Switch Bank ${bankIdx + 1}`}?`)) {
-                      const newBanks = room.lighting.banks.filter((_, i) => i !== bankIdx);
-                      updateRoom({ ...room, lighting: { ...room.lighting, banks: newBanks } });
-                    } else {
-                      console.log('Delete bank cancelled');
-                    }
-                  }}
-                  copyBank={() => {
-                    console.log(`Copying bank ${bankIdx} in room ${roomIdx} on floor ${floorIdx}`);
-                    if (window.confirm(`Copy ${bank.name || `Switch Bank ${bankIdx + 1}`}?`)) {
-                      const newBanks = [...room.lighting.banks];
-                      newBanks.splice(bankIdx + 1, 0, { ...bank });
-                      updateRoom({ ...room, lighting: { ...room.lighting, banks: newBanks } });
-                    } else {
-                      console.log('Copy bank cancelled');
-                    }
-                  }}
-                />
-              ))}
-            </div>
+            {room.lighting.banks.map((bank, bankIdx) => (
+              <SwitchBank
+                key={bankIdx}
+                bank={bank}
+                floorIdx={floorIdx}
+                roomIdx={roomIdx}
+                updateBank={(updatedBank) => {
+                  const newBanks = [...room.lighting.banks];
+                  newBanks[bankIdx] = updatedBank;
+                  updateRoom({ ...room, lighting: { ...room.lighting, banks: newBanks } });
+                }}
+                deleteBank={() => {
+                  const newBanks = room.lighting.banks.filter((_, i) => i !== bankIdx);
+                  updateRoom({ ...room, lighting: { ...room.lighting, banks: newBanks } });
+                }}
+              />
+            ))}
             <button
-              className="mt-2 bg-blue-400 text-white px-3 py-1 rounded hover:bg-blue-500 w-full sm:w-auto"
-              onClick={() => updateRoom({ ...room, lighting: { ...room.lighting, banks: [...room.lighting.banks, { devices: [], name: '', color: 'White' }] } })}
+              className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              onClick={() => updateRoom({
+                ...room,
+                lighting: {
+                  ...room.lighting,
+                  banks: [...room.lighting.banks, { name: '', color: 'White', devices: [{ type: 'Dimmer', notes: '' }] }]
+                }
+              })}
             >
               + Add Switch Bank
             </button>
@@ -469,6 +446,27 @@
             let subAmps = 0;
             let controllerCount = 0;
 
+            const deviceTypes = [
+              'Dimmer', 'Switch', 'Keypad', 'Fan', 'Companion Dimmer', 'Companion Switch', 'Remote Keypad', 'Pico Remote'
+            ];
+            const colorCodes = {
+              'White': 'WH', 'Light Almond': 'LA', 'Ivory': 'IV', 'Black': 'BL', 'Brilliant White': 'BW',
+              'Glacier White': 'GL', 'Snow': 'SW', 'Architectural White': 'RW', 'Lunar Grey': 'LG', 'Mist': 'MI',
+              'Pebble': 'PB', 'Cobblestone': 'CS', 'Biscuit': 'BI', 'Slate': 'SL', 'Sand': 'SD', 'Taupe': 'TP',
+              'Pumice': 'PM', 'Clay': 'CY', 'Sage': 'SA', 'Espresso': 'EP', 'Truffle': 'TF', 'Deep Sea': 'DE',
+              'Signal Red': 'SR', 'Midnight': 'MN'
+            };
+            const modelCodes = {
+              'Switch': 'RRST-8ANS-XX',
+              'Dimmer': 'RRST-PRO-N-XX',
+              'Keypad': 'RRST-W4B-XX',
+              'Fan': 'RRD-2ANF-XX',
+              'Companion Dimmer': 'RRST-RD-XX',
+              'Companion Switch': 'RRST-RS-XX',
+              'Remote Keypad': 'RRST-W4B-XX',
+              'Pico Remote': 'PJ2-4B-GWH-L31'
+            };
+
             project.floors.forEach((floor, floorIdx) => {
               floor.rooms.forEach((room, roomIdx) => {
                 const c4 = room.control4;
@@ -521,7 +519,8 @@
                     if (device.type !== 'Pico Remote') {
                       model = model.replace('XX', colorCodes[bank.color] || 'WH');
                     }
-                    csv += `1,${model},"${location}",Lutron,Lighting System,"Device ${devIdx + 1}: ${device.type}"\n`;
+                    const notes = device.notes ? `; Notes: ${device.notes}` : '';
+                    csv += `1,${model},"${location}",Lutron,Lighting System,"Device ${devIdx + 1}: ${device.type}${notes}"\n`;
                   });
                 });
               });
@@ -679,21 +678,22 @@
               <div className="flex gap-2 mb-4">
                 <a
                   href="Control4.html"
-                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Control4.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                   Control4
                 </a>
                 <a
-                  href="index.html"
-                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                  href="Lighting.html"
+                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Lighting.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                  Lighting
+                </a>
+                <a
+                  href="Locks.html"
+                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Locks.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                   Locks
                 </a>
-                <button
-                  className="px-4 py-2 rounded bg-blue-500 text-white"
-                >
-                  Lighting
-                </button>
               </div>
               <div className="overflow-auto">
                 {project.floors.map((floor, idx) => (
@@ -728,61 +728,30 @@
                         alert('Failed to add room. Check console for details.');
                       }
                     }}
-                    deleteFloor={() => deleteFloor(idx)}
-                    copyFloor={() => copyFloor(idx)}
+                    deleteFloor={deleteFloor}
+                    copyFloor={copyFloor}
                     floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
                   />
                 ))}
               </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto"
-                  onClick={addFloor}
-                >
-                  + Add Floor
-                </button>
-                <button
-                  className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 w-full sm:w-auto"
-                  onClick={exportSurvey}
-                >
-                  Send for Quoting
-                </button>
-              </div>
+              <button
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full sm:w-auto"
+                onClick={addFloor}
+              >
+                + Add Floor
+              </button>
+              <button
+                className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto ml-0 sm:ml-2"
+                onClick={exportSurvey}
+              >
+                Export Survey
+              </button>
             </div>
           );
         };
 
-        class ErrorBoundary extends React.Component {
-          state = { hasError: false, error: null };
-
-          static getDerivedStateFromError(error) {
-            return { hasError: true, error };
-          }
-
-          componentDidCatch(error, errorInfo) {
-            console.error('ErrorBoundary caught:', error, errorInfo);
-          }
-
-          render() {
-            if (this.state.hasError) {
-              return (
-                <div className="p-4 bg-red-100 text-red-700 rounded">
-                  <h2>Something went wrong.</h2>
-                  <p>{this.state.error?.message || 'Unknown error'}</p>
-                  <p>Check the console for details and try refreshing the page.</p>
-                </div>
-              );
-            }
-            return this.props.children;
-          }
-        }
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-          <ErrorBoundary>
-            <SurveyApp />
-          </ErrorBoundary>
-        );
+        root.render(<SurveyApp />);
     </script>
 </body>
 </html>
