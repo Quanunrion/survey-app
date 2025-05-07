@@ -4,56 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Technology Integrator Survey</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/uuid@9.0.1/dist/umd/uuid.min.js" crossorigin="anonymous"></script>
+    <!-- Add defer attribute to JS files for better loading performance -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" defer crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" defer crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" defer crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" defer crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/uuid@9.0.1/dist/umd/uuid.min.js" defer crossorigin="anonymous"></script>
 </head>
 <body>
-    <div id="root" className="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
+    <div id="root" class="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
     <script type="text/babel">
-        const generateFallbackId = () => {
+        // Memoize UUID function to avoid recreating it on each render
+        const generateFallbackId = React.useCallback(() => {
           return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
             const r = Math.random() * 16 | 0;
             const v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
           });
-        };
+        }, []);
+        
         const uuidv4 = window.uuidv4 || generateFallbackId;
 
-        const LandingPage = () => {
-          const [project, setProject] = React.useState({
-            id: uuidv4(),
-            timestamp: new Date().toISOString(),
-            header: 'Technology Integrator Survey',
-            floors: [],
-            equipmentRoom: null
-          });
+        // Extract NavLink as a separate component to reduce re-renders
+        const NavLink = React.memo(({ href, currentPath, children }) => {
+          const isActive = currentPath.includes(href);
+          return (
+            <a
+              href={href}
+              className={`px-4 py-2 rounded ${isActive ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            >
+              {children}
+            </a>
+          );
+        });
 
-          React.useEffect(() => {
+        const LandingPage = () => {
+          const [project, setProject] = React.useState(() => {
+            // Initialize state lazily to avoid unnecessary work
             try {
               const savedSurvey = localStorage.getItem('survey');
               if (savedSurvey) {
-                setProject(JSON.parse(savedSurvey));
+                return JSON.parse(savedSurvey);
               }
             } catch (e) {
               console.error('Failed to load survey from localStorage:', e);
             }
-          }, []);
+            
+            return {
+              id: uuidv4(),
+              timestamp: new Date().toISOString(),
+              header: 'Technology Integrator Survey',
+              floors: [],
+              equipmentRoom: null
+            };
+          });
 
+          const currentPath = window.location.pathname;
+
+          // Use debounce for localStorage updates to reduce writes
           React.useEffect(() => {
-            try {
-              localStorage.setItem('survey', JSON.stringify(project));
-            } catch (e) {
-              console.error('Failed to save survey to localStorage:', e);
-            }
+            const timeoutId = setTimeout(() => {
+              try {
+                localStorage.setItem('survey', JSON.stringify(project));
+              } catch (e) {
+                console.error('Failed to save survey to localStorage:', e);
+              }
+            }, 500);
+            
+            return () => clearTimeout(timeoutId);
           }, [project]);
 
-          const updateHeader = (newHeader) => {
-            setProject({ ...project, header: newHeader });
-          };
+          const updateHeader = React.useCallback((newHeader) => {
+            setProject(prev => ({ ...prev, header: newHeader }));
+          }, []);
 
           return (
             <div className="max-w-4xl w-full mx-auto">
@@ -67,30 +91,10 @@
                 />
               </div>
               <div className="flex gap-2 mb-4">
-                <a
-                  href="index.html"
-                  className={`px-4 py-2 rounded ${window.location.pathname.includes('index.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                >
-                  Home
-                </a>
-                <a
-                  href="Control4.html"
-                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Control4.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                >
-                  Control4
-                </a>
-                <a
-                  href="Lighting.html"
-                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Lighting.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                >
-                  Lighting
-                </a>
-                <a
-                  href="Locks.html"
-                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Locks.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                >
-                  Locks
-                </a>
+                <NavLink href="index.html" currentPath={currentPath}>Home</NavLink>
+                <NavLink href="Control4.html" currentPath={currentPath}>Control4</NavLink>
+                <NavLink href="Lighting.html" currentPath={currentPath}>Lighting</NavLink>
+                <NavLink href="Locks.html" currentPath={currentPath}>Locks</NavLink>
               </div>
               <div className="p-4 bg-white rounded shadow">
                 <h2 className="text-lg font-semibold">Welcome to the Technology Integrator Survey</h2>
@@ -125,13 +129,17 @@
           }
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-          <ErrorBoundary>
-            <LandingPage />
-          </ErrorBoundary>
-        );
+        // Use createRoot only after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+          const root = ReactDOM.createRoot(document.getElementById('root'));
+          root.render(
+            <React.StrictMode>
+              <ErrorBoundary>
+                <LandingPage />
+              </ErrorBoundary>
+            </React.StrictMode>
+          );
+        });
     </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93943e2b4dd7bfcf',t:'MTc0NjE1NDU5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
