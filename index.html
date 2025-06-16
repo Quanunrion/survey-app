@@ -66,7 +66,7 @@
                   placeholder="Enter survey title"
                 />
               </div>
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-4 flex-wrap">
                 <a
                   href="index.html"
                   className={`px-4 py-2 rounded ${window.location.pathname.includes('index.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
@@ -91,10 +91,27 @@
                 >
                   Locks
                 </a>
+                <a
+                  href="Cameras.html"
+                  className={`px-4 py-2 rounded ${window.location.pathname.includes('Cameras.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                  Cameras
+                </a>
               </div>
               <div className="p-4 bg-white rounded shadow">
-                <h2 className="text-lg font-semibold">Welcome to the Technology Integrator Survey</h2>
-                <p>Select a tab above to configure Control4, Lighting, or Locks for your project.</p>
+                <h2 className="text-lg font-semibold mb-4">Welcome to the Technology Integrator Survey</h2>
+                <p className="mb-4">Select a tab above to configure different systems for your project:</p>
+                <ul className="list-disc list-inside space-y-2 text-gray-700">
+                  <li><strong>Control4:</strong> Smart home automation controllers, audio systems, and touchscreens</li>
+                  <li><strong>Lighting:</strong> Lutron switches, dimmers, and lighting control systems</li>
+                  <li><strong>Locks:</strong> Door hardware specifications and security systems</li>
+                  <li><strong>Cameras:</strong> Surveillance camera placement and specifications</li>
+                </ul>
+                <div className="mt-6 p-3 bg-blue-50 rounded">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Your survey data is automatically saved as you work and shared across all tabs.
+                  </p>
+                </div>
               </div>
             </div>
           );
@@ -132,6 +149,5 @@
           </ErrorBoundary>
         );
     </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93943e2b4dd7bfcf',t:'MTc0NjE1NDU5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
