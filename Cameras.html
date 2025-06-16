@@ -576,12 +576,6 @@
               </div>
               <div className="flex gap-2 mb-4 flex-wrap">
                 <a
-                  href="index.html"
-                  className={`px-4 py-2 rounded ${window.location.pathname.includes('index.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                >
-                  Home
-                </a>
-                <a
                   href="Control4.html"
                   className={`px-4 py-2 rounded ${window.location.pathname.includes('Control4.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
@@ -606,6 +600,42 @@
                   Cameras
                 </a>
               </div>
+
+              {/* Camera Summary */}
+              {(() => {
+                const totalCameras = project.floors.reduce((total, floor) => 
+                  total + floor.rooms.reduce((roomTotal, room) => 
+                    roomTotal + (room.cameras?.enabled ? room.cameras.cameras.length : 0), 0), 0);
+                
+                if (totalCameras > 0) {
+                  let remainingCameras = totalCameras;
+                  const nvrs = [];
+                  
+                  while (remainingCameras > 0) {
+                    if (remainingCameras >= 16) {
+                      nvrs.push('16-Channel NVR');
+                      remainingCameras -= 16;
+                    } else if (remainingCameras >= 8) {
+                      nvrs.push('8-Channel NVR');
+                      remainingCameras -= 8;
+                    } else {
+                      nvrs.push('4-Channel NVR');
+                      remainingCameras -= 4;
+                    }
+                  }
+
+                  return (
+                    <div className="mb-4 p-4 bg-blue-50 rounded shadow">
+                      <h3 className="text-lg font-semibold mb-2">Camera System Summary</h3>
+                      <p className="mb-2"><strong>Total Cameras:</strong> {totalCameras}</p>
+                      <p className="mb-2"><strong>Required NVRs:</strong> {nvrs.join(', ')}</p>
+                      <p className="text-sm text-blue-700">NVRs will be added to equipment rack calculations.</p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="overflow-auto">
                 {project.floors.map((floor, idx) => (
                   <Floor
