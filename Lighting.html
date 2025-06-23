@@ -184,16 +184,11 @@
           }, [index, floor.rooms.length]);
 
           return (
-            <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow overflow-x-hidden">
+            <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow">
               <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
                 <input
                   type="text"
                   value={floor.name}
-                  onFocus={() => updateFloor({ ...floor, name: '' })}
-                  onBlur={(e) => {
-                    const value = e.target.value.trim();
-                    updateFloor({ ...floor, name: value || `Floor ${index + 1}` });
-                  }}
                   onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
                   placeholder={`Floor ${index + 1}`}
                   className="text-lg font-bold border p-3 rounded w-full sm:flex-1"
@@ -213,104 +208,40 @@
                   </button>
                 </div>
               </div>
-
-              {/* Lighting System Summary */}
-              {(() => {
-                let totalDevices = 0;
-                let totalBanks = 0;
-                const deviceCounts = {};
-                const colorCounts = {};
-
-                project.floors.forEach((floor) => {
-                  floor.rooms.forEach((room) => {
-                    if (room.lighting && room.lighting.banks) {
-                      totalBanks += room.lighting.banks.length;
-                      room.lighting.banks.forEach((bank) => {
-                        colorCounts[bank.color] = (colorCounts[bank.color] || 0) + 1;
-                        bank.devices.forEach((device) => {
-                          totalDevices++;
-                          deviceCounts[device.type] = (deviceCounts[device.type] || 0) + 1;
-                        });
-                      });
-                    }
-                  });
-                });
-
-                const topDeviceTypes = Object.entries(deviceCounts)
-                  .sort(([,a], [,b]) => b - a)
-                  .slice(0, 4);
-
-                const topColors = Object.entries(colorCounts)
-                  .sort(([,a], [,b]) => b - a)
-                  .slice(0, 3);
-
-                if (totalDevices > 0) {
-                  return (
-                    <div className="mb-4 p-4 bg-purple-50 rounded shadow">
-                      <h3 className="text-lg font-semibold mb-2">Lighting System Summary</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <p className="mb-1"><strong>Total Devices:</strong> {totalDevices}</p>
-                          <p className="mb-1"><strong>Switch Banks:</strong> {totalBanks}</p>
-                          <p className="mb-1"><strong>Most Common Device:</strong> {topDeviceTypes[0]?.[0] || 'None'}</p>
-                          <p className="mb-1"><strong>Most Common Color:</strong> {topColors[0]?.[0] || 'None'}</p>
-                        </div>
-                        <div>
-                          <p className="mb-1"><strong>Device Breakdown:</strong></p>
-                          <ul className="text-sm">
-                            {topDeviceTypes.map(([type, count]) => (
-                              <li key={type}>• {count}x {type}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                      <div className="mt-3 p-2 bg-purple-100 rounded text-sm">
-                        <strong>Popular Colors:</strong>
-                        <div className="mt-1 text-xs text-purple-700">
-                          {topColors.map(([color, count]) => `${count}x ${color}`).join(' | ')}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
-              <div className="overflow-auto">
-                {floor.rooms.map((room, roomIdx) => (
-                  <Room
-                    key={roomIdx}
-                    room={room}
-                    floorIdx={index}
-                    roomIdx={roomIdx}
-                    updateRoom={(updatedRoom) => {
-                      const newRooms = [...floor.rooms];
-                      newRooms[roomIdx] = updatedRoom;
+              {floor.rooms.map((room, roomIdx) => (
+                <Room
+                  key={roomIdx}
+                  room={room}
+                  floorIdx={index}
+                  roomIdx={roomIdx}
+                  updateRoom={(updatedRoom) => {
+                    const newRooms = [...floor.rooms];
+                    newRooms[roomIdx] = updatedRoom;
+                    updateFloor({ ...floor, rooms: newRooms });
+                  }}
+                  deleteRoom={() => {
+                    if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                      const newRooms = floor.rooms.filter((_, i) => i !== roomIdx);
+                      roomRefs.current[index].splice(roomIdx, 1);
                       updateFloor({ ...floor, rooms: newRooms });
-                    }}
-                    deleteRoom={() => {
-                      if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
-                        const newRooms = floor.rooms.filter((_, i) => i !== roomIdx);
-                        roomRefs.current[index].splice(roomIdx, 1);
-                        updateFloor({ ...floor, rooms: newRooms });
-                      }
-                    }}
-                    copyRoom={() => {
-                      if (window.confirm(`Copy ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
-                        const newRooms = [...floor.rooms];
-                        newRooms.splice(roomIdx + 1, 0, { ...room });
-                        roomRefs.current[index].splice(roomIdx + 1, 0, React.createRef());
-                        updateFloor({ ...floor, rooms: newRooms });
-                        setTimeout(() => {
-                          if (roomRefs.current[index][roomIdx + 1]?.current) {
-                            roomRefs.current[index][roomIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }, 0);
-                      }
-                    }}
-                    roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
-                  />
-                ))}
+                    }
+                  }}
+                  copyRoom={() => {
+                    if (window.confirm(`Copy ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                      const newRooms = [...floor.rooms];
+                      newRooms.splice(roomIdx + 1, 0, { ...room });
+                      roomRefs.current[index].splice(roomIdx + 1, 0, React.createRef());
+                      updateFloor({ ...floor, rooms: newRooms });
+                      setTimeout(() => {
+                        if (roomRefs.current[index][roomIdx + 1]?.current) {
+                          roomRefs.current[index][roomIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }, 0);
+                    }
+                  }}
+                  roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
+                />
+              ))}
               <button
                 className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
                 onClick={addRoom}
@@ -332,6 +263,32 @@
           });
 
           const floorRefs = React.useRef([]);
+
+          // Standardized room creation
+          const createNewRoom = () => ({
+            name: '',
+            control4: {
+              isEquipmentRoom: false,
+              videoStream: { enabled: false, notes: '' },
+              roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
+              keypads: [],
+              lights: { enabled: false, count: 0, devices: [] },
+              shades: [],
+              touchscreens: [],
+              haloRemote: { enabled: false, color: 'Black', notes: '' }
+            },
+            locks: { 
+              enabled: false, 
+              locks: [] 
+            },
+            lighting: { 
+              banks: [] 
+            },
+            cameras: { 
+              enabled: false, 
+              cameras: [] 
+            }
+          });
 
           // Initialize EmailJS
           React.useEffect(() => {
@@ -368,31 +325,6 @@
               console.error('Failed to save survey to localStorage:', e);
             }
           }, [project]);
-
-          const createNewRoom = () => ({
-            name: '',
-            control4: {
-              isEquipmentRoom: false,
-              videoStream: { enabled: false, notes: '' },
-              roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
-              keypads: [],
-              lights: { enabled: false, count: 0, devices: [] },
-              shades: [],
-              touchscreens: [],
-              haloRemote: { enabled: false, color: 'Black', notes: '' }
-            },
-            locks: { 
-              enabled: false, 
-              locks: [] 
-            },
-            lighting: { 
-              banks: [] 
-            },
-            cameras: { 
-              enabled: false, 
-              cameras: [] 
-            }
-          });
 
           const addFloor = () => {
             try {
@@ -671,7 +603,7 @@
               emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
                 .then((response) => {
                   console.log('Email sent successfully:', response.status, response.text);
-                  alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
+                  alert('Complete survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
                 })
                 .catch((error) => {
                   console.error('Failed to send email:', error);
@@ -720,31 +652,92 @@
                   Cameras
                 </a>
               </div>
-              <div className="overflow-auto">
-                {project.floors.map((floor, idx) => (
-                  <Floor
-                    key={idx}
-                    floor={floor}
-                    index={idx}
-                    updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
-                    addRoom={() => {
-                      try {
-                        const newRoom = createNewRoom();
-                        updateFloor(idx, {
-                          ...floor,
-                          rooms: [...floor.rooms, newRoom]
+
+              {/* Lighting System Summary */}
+              {(() => {
+                let totalDevices = 0;
+                let totalBanks = 0;
+                const deviceCounts = {};
+                const colorCounts = {};
+
+                project.floors.forEach((floor) => {
+                  floor.rooms.forEach((room) => {
+                    if (room.lighting && room.lighting.banks) {
+                      totalBanks += room.lighting.banks.length;
+                      room.lighting.banks.forEach((bank) => {
+                        colorCounts[bank.color] = (colorCounts[bank.color] || 0) + 1;
+                        bank.devices.forEach((device) => {
+                          totalDevices++;
+                          deviceCounts[device.type] = (deviceCounts[device.type] || 0) + 1;
                         });
-                      } catch (e) {
-                        console.error('Error adding room:', e);
-                        alert('Failed to add room. Check console for details.');
-                      }
-                    }}
-                    deleteFloor={deleteFloor}
-                    copyFloor={copyFloor}
-                    floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
-                  />
-                ))}
-              </div>
+                      });
+                    }
+                  });
+                });
+
+                const topDeviceTypes = Object.entries(deviceCounts)
+                  .sort(([,a], [,b]) => b - a)
+                  .slice(0, 4);
+
+                const topColors = Object.entries(colorCounts)
+                  .sort(([,a], [,b]) => b - a)
+                  .slice(0, 3);
+
+                if (totalDevices > 0) {
+                  return (
+                    <div className="mb-4 p-4 bg-purple-50 rounded shadow">
+                      <h3 className="text-lg font-semibold mb-2">Lighting System Summary</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="mb-1"><strong>Total Devices:</strong> {totalDevices}</p>
+                          <p className="mb-1"><strong>Switch Banks:</strong> {totalBanks}</p>
+                          <p className="mb-1"><strong>Most Common Device:</strong> {topDeviceTypes[0]?.[0] || 'None'}</p>
+                          <p className="mb-1"><strong>Most Common Color:</strong> {topColors[0]?.[0] || 'None'}</p>
+                        </div>
+                        <div>
+                          <p className="mb-1"><strong>Device Breakdown:</strong></p>
+                          <ul className="text-sm">
+                            {topDeviceTypes.map(([type, count]) => (
+                              <li key={type}>• {count}x {type}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-2 bg-purple-100 rounded text-sm">
+                        <strong>Popular Colors:</strong>
+                        <div className="mt-1 text-xs text-purple-700">
+                          {topColors.map(([color, count]) => `${count}x ${color}`).join(' | ')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {project.floors.map((floor, idx) => (
+                <Floor
+                  key={idx}
+                  floor={floor}
+                  index={idx}
+                  updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
+                  addRoom={() => {
+                    try {
+                      const newRoom = createNewRoom();
+                      updateFloor(idx, {
+                        ...floor,
+                        rooms: [...floor.rooms, newRoom]
+                      });
+                    } catch (e) {
+                      console.error('Error adding room:', e);
+                      alert('Failed to add room. Check console for details.');
+                    }
+                  }}
+                  deleteFloor={deleteFloor}
+                  copyFloor={copyFloor}
+                  floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
+                />
+              ))}
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full sm:w-auto"
