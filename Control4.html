@@ -1,393 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Technology Integrator Survey - Control4</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.1/dist/umd/uuid.min.js" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technology Integrator Survey - Control4</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/uuid@9.0.1/dist/umd/uuid.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <div id="root" className="min-h-screen bg-gray-100 p-2 sm:p-4"></div>
-  <script type="text/babel">
-    // Utility Functions
-    const generateFallbackId = () => {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    };
-    const uuidv4 = window.uuidv4 || generateFallbackId;
+    <div id="root"></div>
+    <script type="text/babel">
+        // Utility Functions
+        const generateFallbackId = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
+        const uuidv4 = window.uuidv4 || generateFallbackId;
 
-    // Constants
-    const audioDistributions = ['Mono', 'Stereo', '2.1', '5.1', '7.1', '7.2', '7.2.4'];
-    const touchscreenSizes = ['7"', '10"'];
-    const haloColors = ['Black', 'Silver'];
+        // Constants
+        const audioDistributions = ['Mono', 'Stereo', '2.1', '5.1', '7.1', '7.2', '7.2.4'];
+        const touchscreenSizes = ['7"', '10"'];
+        const haloColors = ['Black', 'Silver'];
 
-    // Control4 Room Component
-    const Control4Room = ({ room, floorIdx, roomIdx, updateRoom, setEquipmentRoom }) => {
-      const updateControl4 = (updates) => {
-        updateRoom({ ...room, control4: { ...room.control4, ...updates } });
-      };
+        // Create standardized room template
+        const createStandardRoom = () => ({
+          name: '',
+          control4: {
+            isEquipmentRoom: false,
+            videoStream: { enabled: false, notes: '' },
+            roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
+            keypads: [],
+            lights: { enabled: false, count: 0, devices: [] },
+            shades: [],
+            touchscreens: [],
+            haloRemote: { enabled: false, color: 'Black', notes: '' }
+          },
+          locks: { 
+            enabled: false, 
+            locks: [] 
+          },
+          lighting: { 
+            banks: [] 
+          },
+          cameras: { 
+            enabled: false, 
+            cameras: [] 
+          }
+        });
 
-      return (
-        <div className="mt-2">
-          <div className="mb-2">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name={`equipmentRoom-${floorIdx}`}
-                checked={room.control4.isEquipmentRoom}
-                onChange={() => setEquipmentRoom(floorIdx, roomIdx)}
-                className="mr-2"
-              />
-              Is this the Equipment Room?
-            </label>
-          </div>
+        // Control4 Room Component
+        const Control4Room = ({ room, floorIdx, roomIdx, updateRoom, setEquipmentRoom }) => {
+          const updateControl4 = (updates) => {
+            updateRoom({ ...room, control4: { ...room.control4, ...updates } });
+          };
 
-          <div className="mb-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={room.control4.videoStream.enabled}
-                onChange={(e) => updateControl4({ videoStream: { ...room.control4.videoStream, enabled: e.target.checked } })}
-                className="mr-2"
-              />
-              Video Stream in Room
-            </label>
-            {room.control4.videoStream.enabled && (
-              <input
-                type="text"
-                value={room.control4.videoStream.notes}
-                onChange={(e) => updateControl4({ videoStream: { ...room.control4.videoStream, notes: e.target.value } })}
-                placeholder="Video Stream Notes"
-                className="border p-3 rounded w-full mt-1"
-              />
-            )}
-          </div>
-
-          <div className="mb-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={room.control4.roomAudio.enabled}
-                onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, enabled: e.target.checked } })}
-                className="mr-2"
-              />
-              Room Audio (Outside Video Output)
-            </label>
-            {room.control4.roomAudio.enabled && (
-              <div className="ml-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <label>
-                    <input
-                      type="radio"
-                      name={`audioType-${floorIdx}-${roomIdx}`}
-                      checked={!room.control4.roomAudio.wireless}
-                      onChange={() => updateControl4({ roomAudio: { ...room.control4.roomAudio, wireless: false } })}
-                      className="mr-2"
-                    />
-                    Wired
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name={`audioType-${floorIdx}-${roomIdx}`}
-                      checked={room.control4.roomAudio.wireless}
-                      onChange={() => updateControl4({ roomAudio: { ...room.control4.roomAudio, wireless: true } })}
-                      className="mr-2"
-                    />
-                    Wireless
-                  </label>
-                </div>
-                <input
-                  type="number"
-                  value={room.control4.roomAudio.speakers}
-                  onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, speakers: parseInt(e.target.value) || 2 } })}
-                  placeholder="Number of Speakers"
-                  className="border p-3 rounded w-full mt-1"
-                  min="1"
-                />
-                <select
-                  value={room.control4.roomAudio.distribution}
-                  onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, distribution: e.target.value } })}
-                  className="border p-3 rounded w-full mt-1"
-                >
-                  {audioDistributions.map((dist) => (
-                    <option key={dist} value={dist}>{dist}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  value={room.control4.roomAudio.notes}
-                  onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, notes: e.target.value } })}
-                  placeholder="Audio Notes"
-                  className="border p-3 rounded w-full mt-1"
-                />
+          return (
+            <div className="mt-2">
+              <div className="mb-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name={`equipmentRoom-${floorIdx}`}
+                    checked={room.control4.isEquipmentRoom}
+                    onChange={() => setEquipmentRoom(floorIdx, roomIdx)}
+                    className="mr-2"
+                  />
+                  Is this the Equipment Room?
+                </label>
               </div>
-            )}
-          </div>
 
-          <div className="mb-2">
-            <label className="block">
-              Number of Configurable Keypads:
-              <input
-                type="number"
-                value={room.control4.keypads.length}
-                onChange={(e) => {
-                  const count = parseInt(e.target.value) || 0;
-                  const keypads = Array(count).fill().map((_, i) => room.control4.keypads[i] || { notes: '' });
-                  updateControl4({ keypads });
-                }}
-                className="border p-3 rounded w-20 mt-1"
-                min="0"
-              />
-            </label>
-            {room.control4.keypads.map((keypad, idx) => (
-              <input
-                key={idx}
-                type="text"
-                value={keypad.notes}
-                onChange={(e) => {
-                  const newKeypads = [...room.control4.keypads];
-                  newKeypads[idx] = { ...keypad, notes: e.target.value };
-                  updateControl4({ keypads: newKeypads });
-                }}
-                placeholder={`Keypad ${idx + 1} Notes`}
-                className="border p-3 rounded w-full mt-1"
-              />
-            ))}
-          </div>
+              <div className="mb-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={room.control4.videoStream.enabled}
+                    onChange={(e) => updateControl4({ videoStream: { ...room.control4.videoStream, enabled: e.target.checked } })}
+                    className="mr-2"
+                  />
+                  Video Stream in Room
+                </label>
+                {room.control4.videoStream.enabled && (
+                  <input
+                    type="text"
+                    value={room.control4.videoStream.notes}
+                    onChange={(e) => updateControl4({ videoStream: { ...room.control4.videoStream, notes: e.target.value } })}
+                    placeholder="Video Stream Notes"
+                    className="border p-2 rounded w-full mt-1"
+                  />
+                )}
+              </div>
 
-          <div className="mb-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={room.control4.lights.enabled}
-                onChange={(e) => updateControl4({ lights: { ...room.control4.lights, enabled: e.target.checked } })}
-                className="mr-2"
-              />
-              Lights to be Controlled
-            </label>
-            {room.control4.lights.enabled && (
-              <div className="ml-4">
-                <label className="block">
-                  Number of Lights:
+              <div className="mb-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={room.control4.roomAudio.enabled}
+                    onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, enabled: e.target.checked } })}
+                    className="mr-2"
+                  />
+                  Room Audio (Outside Video Output)
+                </label>
+                {room.control4.roomAudio.enabled && (
+                  <div className="ml-4">
+                    <div className="flex gap-4 mb-2">
+                      <label>
+                        <input
+                          type="radio"
+                          name={`audioType-${floorIdx}-${roomIdx}`}
+                          checked={!room.control4.roomAudio.wireless}
+                          onChange={() => updateControl4({ roomAudio: { ...room.control4.roomAudio, wireless: false } })}
+                          className="mr-2"
+                        />
+                        Wired
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`audioType-${floorIdx}-${roomIdx}`}
+                          checked={room.control4.roomAudio.wireless}
+                          onChange={() => updateControl4({ roomAudio: { ...room.control4.roomAudio, wireless: true } })}
+                          className="mr-2"
+                        />
+                        Wireless
+                      </label>
+                    </div>
+                    <input
+                      type="number"
+                      value={room.control4.roomAudio.speakers}
+                      onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, speakers: parseInt(e.target.value) || 2 } })}
+                      placeholder="Number of Speakers"
+                      className="border p-2 rounded w-full mb-2"
+                      min="1"
+                    />
+                    <select
+                      value={room.control4.roomAudio.distribution}
+                      onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, distribution: e.target.value } })}
+                      className="border p-2 rounded w-full mb-2"
+                    >
+                      {audioDistributions.map((dist) => (
+                        <option key={dist} value={dist}>{dist}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={room.control4.roomAudio.notes}
+                      onChange={(e) => updateControl4({ roomAudio: { ...room.control4.roomAudio, notes: e.target.value } })}
+                      placeholder="Audio Notes"
+                      className="border p-2 rounded w-full"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-2">
+                <label className="block mb-1">
+                  Number of Configurable Keypads:
                   <input
                     type="number"
-                    value={room.control4.lights.count}
+                    value={room.control4.keypads.length}
                     onChange={(e) => {
                       const count = parseInt(e.target.value) || 0;
-                      const devices = Array(count).fill().map((_, i) => room.control4.lights.devices[i] || { notes: '' });
-                      updateControl4({ lights: { ...room.control4.lights, count, devices } });
+                      const keypads = Array(count).fill().map((_, i) => room.control4.keypads[i] || { notes: '' });
+                      updateControl4({ keypads });
                     }}
-                    className="border p-3 rounded w-20 mt-1"
+                    className="border p-2 rounded w-20 ml-2"
                     min="0"
                   />
                 </label>
-                {room.control4.lights.devices.map((device, idx) => (
+                {room.control4.keypads.map((keypad, idx) => (
                   <input
                     key={idx}
                     type="text"
-                    value={device.notes}
+                    value={keypad.notes}
                     onChange={(e) => {
-                      const newDevices = [...room.control4.lights.devices];
-                      newDevices[idx] = { ...device, notes: e.target.value };
-                      updateControl4({ lights: { ...room.control4.lights, devices: newDevices } });
+                      const newKeypads = [...room.control4.keypads];
+                      newKeypads[idx] = { ...keypad, notes: e.target.value };
+                      updateControl4({ keypads: newKeypads });
                     }}
-                    placeholder={`Light ${idx + 1} Notes`}
-                    className="border p-3 rounded w-full mt-1"
+                    placeholder={`Keypad ${idx + 1} Notes`}
+                    className="border p-2 rounded w-full mt-1"
                   />
                 ))}
               </div>
-            )}
-          </div>
 
-          <div className="mb-2">
-            <label className="block">
-              Number of Shade Requirements:
+              <div className="mb-2">
+                <label className="block mb-1">
+                  Number of C4 Touchscreens:
+                  <input
+                    type="number"
+                    value={room.control4.touchscreens.length}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 0;
+                      const touchscreens = Array(count).fill().map((_, i) => room.control4.touchscreens[i] || { size: '7"', notes: '' });
+                      updateControl4({ touchscreens });
+                    }}
+                    className="border p-2 rounded w-20 ml-2"
+                    min="0"
+                  />
+                </label>
+                {room.control4.touchscreens.map((screen, idx) => (
+                  <div key={idx} className="flex gap-2 mt-1">
+                    <select
+                      value={screen.size}
+                      onChange={(e) => {
+                        const newScreens = [...room.control4.touchscreens];
+                        newScreens[idx] = { ...screen, size: e.target.value };
+                        updateControl4({ touchscreens: newScreens });
+                      }}
+                      className="border p-2 rounded"
+                    >
+                      {touchscreenSizes.map((size) => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={screen.notes}
+                      onChange={(e) => {
+                        const newScreens = [...room.control4.touchscreens];
+                        newScreens[idx] = { ...screen, notes: e.target.value };
+                        updateControl4({ touchscreens: newScreens });
+                      }}
+                      placeholder={`Touchscreen ${idx + 1} Notes`}
+                      className="border p-2 rounded flex-1"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mb-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={room.control4.haloRemote.enabled}
+                    onChange={(e) => updateControl4({ haloRemote: { ...room.control4.haloRemote, enabled: e.target.checked } })}
+                    className="mr-2"
+                  />
+                  C4 Halo Remote in Room
+                </label>
+                {room.control4.haloRemote.enabled && (
+                  <div className="ml-4">
+                    <select
+                      value={room.control4.haloRemote.color}
+                      onChange={(e) => updateControl4({ haloRemote: { ...room.control4.haloRemote, color: e.target.value } })}
+                      className="border p-2 rounded w-full mb-2"
+                    >
+                      {haloColors.map((color) => (
+                        <option key={color} value={color}>{color}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={room.control4.haloRemote.notes}
+                      onChange={(e) => updateControl4({ haloRemote: { ...room.control4.haloRemote, notes: e.target.value } })}
+                      placeholder="Halo Remote Notes"
+                      className="border p-2 rounded w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // Room Component
+        const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, setEquipmentRoom }) => (
+          <div className="ml-2 mb-4 p-4 bg-gray-50 rounded shadow">
+            <div className="flex items-center gap-2 mb-2">
               <input
-                type="number"
-                value={room.control4.shades.length}
-                onChange={(e) => {
-                  const count = parseInt(e.target.value) || 0;
-                  const shades = Array(count).fill().map((_, i) => room.control4.shades[i] || { notes: '' });
-                  updateControl4({ shades });
-                }}
-                className="border p-3 rounded w-20 mt-1"
-                min="0"
-              />
-            </label>
-            {room.control4.shades.map((shade, idx) => (
-              <input
-                key={idx}
                 type="text"
-                value={shade.notes}
-                onChange={(e) => {
-                  const newShades = [...room.control4.shades];
-                  newShades[idx] = { ...shade, notes: e.target.value };
-                  updateControl4({ shades: newShades });
-                }}
-                placeholder={`Shade ${idx + 1} Notes`}
-                className="border p-3 rounded w-full mt-1"
+                value={room.name}
+                onChange={(e) => updateRoom({ ...room, name: e.target.value })}
+                placeholder={`Room ${roomIdx + 1}`}
+                className="text-md font-semibold border p-2 rounded flex-1"
               />
-            ))}
-          </div>
-
-          <div className="mb-2">
-            <label className="block">
-              Number of C4 Touchscreens:
-              <input
-                type="number"
-                value={room.control4.touchscreens.length}
-                onChange={(e) => {
-                  const count = parseInt(e.target.value) || 0;
-                  const touchscreens = Array(count).fill().map((_, i) => room.control4.touchscreens[i] || { size: '7"', notes: '' });
-                  updateControl4({ touchscreens });
-                }}
-                className="border p-3 rounded w-20 mt-1"
-                min="0"
-              />
-            </label>
-            {room.control4.touchscreens.map((screen, idx) => (
-              <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center mt-1 gap-2">
-                <select
-                  value={screen.size}
-                  onChange={(e) => {
-                    const newScreens = [...room.control4.touchscreens];
-                    newScreens[idx] = { ...screen, size: e.target.value };
-                    updateControl4({ touchscreens: newScreens });
-                  }}
-                  className="border p-3 rounded w-full sm:w-24"
-                >
-                  {touchscreenSizes.map((size) => (
-                    <option key={size} value={size}>{size}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  value={screen.notes}
-                  onChange={(e) => {
-                    const newScreens = [...room.control4.touchscreens];
-                    newScreens[idx] = { ...screen, notes: e.target.value };
-                    updateControl4({ touchscreens: newScreens });
-                  }}
-                  placeholder={`Touchscreen ${idx + 1} Notes`}
-                  className="border p-3 rounded w-full sm:flex-1"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="mb-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={room.control4.haloRemote.enabled}
-                onChange={(e) => updateControl4({ haloRemote: { ...room.control4.haloRemote, enabled: e.target.checked } })}
-                className="mr-2"
-              />
-              C4 Halo Remote in Room
-            </label>
-            {room.control4.haloRemote.enabled && (
-              <div className="ml-4">
-                <select
-                  value={room.control4.haloRemote.color}
-                  onChange={(e) => updateControl4({ haloRemote: { ...room.control4.haloRemote, color: e.target.value } })}
-                  className="border p-3 rounded w-full mt-1"
-                >
-                  {haloColors.map((color) => (
-                    <option key={color} value={color}>{color}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  value={room.control4.haloRemote.notes}
-                  onChange={(e) => updateControl4({ haloRemote: { ...room.control4.haloRemote, notes: e.target.value } })}
-                  placeholder="Halo Remote Notes"
-                  className="border p-3 rounded w-full mt-1"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    };
-
-    // Room Component
-    const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, roomRef, setEquipmentRoom }) => (
-      <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
-          <input
-            type="text"
-            value={room.name}
-            onChange={(e) => updateRoom({ ...room, name: e.target.value })}
-            placeholder={`Room ${roomIdx + 1}`}
-            className="text-md font-semibold border p-3 rounded w-full sm:flex-1"
-          />
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button
-              className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 active:bg-yellow-700"
-              onClick={copyRoom}
-            >
-              Copy Room
-            </button>
-            <button
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 active:bg-red-700"
-              onClick={deleteRoom}
-            >
-              Delete Room
-            </button>
-          </div>
-        </div>
-        <Control4Room
-          room={room}
-          floorIdx={floorIdx}
-          roomIdx={roomIdx}
-          updateRoom={updateRoom}
-          setEquipmentRoom={setEquipmentRoom}
-        />
-      </div>
-    );
-
-    // Floor Component
-    const Floor = ({ floor, index, updateFloor, addRoom, deleteFloor, copyFloor, floorRef, setEquipmentRoom }) => {
-      const roomRefs = React.useRef([]);
-      React.useEffect(() => {
-        roomRefs.current[index] = roomRefs.current[index] || Array(floor.rooms.length).fill().map(() => React.createRef());
-      }, [index, floor.rooms.length]);
-
-      return (
-        <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
-            <input
-              type="text"
-              value={floor.name}
-              onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
-              placeholder={`Floor ${index + 1}`}
-              className="text-lg font-bold border p-3 rounded w-full sm:flex-1"
-            />
-            <div className="flex gap-2 w-full sm:w-auto">
               <button
-                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 active:bg-yellow-700"
-                onClick={() => copyFloor(index)}
+                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                onClick={copyRoom}
               >
-                Copy Floor
+                Copy
               </button>
               <button
-                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 active:bg-red-700"
-                onClick={() => deleteFloor(index)}
+                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                onClick={deleteRoom}
               >
-                Delete Floor
+                Delete
               </button>
             </div>
+            <Control4Room
+              room={room}
+              floorIdx={floorIdx}
+              roomIdx={roomIdx}
+              updateRoom={updateRoom}
+              setEquipmentRoom={setEquipmentRoom}
+            />
           </div>
-          {floor.rooms.map((room, roomIdx) => (
+        );
+
+        // Floor Component
+        const Floor = ({ floor, index, updateFloor, addRoom, deleteFloor, copyFloor }) => (
+          <div className="mb-4 p-4 bg-white rounded shadow">
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                value={floor.name}
+                onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
+                placeholder={`Floor ${index + 1}`}
+                className="text-lg font-bold border p-2 rounded flex-1"
+              />
+              <button
+                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                onClick={copyFloor}
+              >
+                Copy
+              </button>
+              <button
+                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                onClick={deleteFloor}
+              >
+                Delete
+              </button>
+            </div>
+            
+            {floor.rooms.map((room, roomIdx) => (
               <Room
                 key={roomIdx}
                 room={room}
@@ -399,386 +341,237 @@
                   updateFloor({ ...floor, rooms: newRooms });
                 }}
                 deleteRoom={() => {
-                  if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                  if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`}?`)) {
                     const newRooms = floor.rooms.filter((_, i) => i !== roomIdx);
-                    roomRefs.current[index].splice(roomIdx, 1);
                     updateFloor({ ...floor, rooms: newRooms });
                   }
                 }}
                 copyRoom={() => {
-                  if (window.confirm(`Copy ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
-                    const newRooms = [...floor.rooms];
-                    newRooms.splice(roomIdx + 1, 0, { ...room });
-                    roomRefs.current[index].splice(roomIdx + 1, 0, React.createRef());
-                    updateFloor({ ...floor, rooms: newRooms });
-                    setTimeout(() => {
-                      if (roomRefs.current[index][roomIdx + 1]?.current) {
-                        roomRefs.current[index][roomIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }, 0);
-                  }
+                  const newRooms = [...floor.rooms];
+                  newRooms.splice(roomIdx + 1, 0, { ...room });
+                  updateFloor({ ...floor, rooms: newRooms });
                 }}
-                roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
-                setEquipmentRoom={setEquipmentRoom}
+                setEquipmentRoom={updateFloor.setEquipmentRoom}
               />
             ))}
-          <button
-            className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
-            onClick={addRoom}
-          >
-            + Add Room
-          </button>
-        </div>
-      );
-    };
+            
+            <button
+              className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              onClick={addRoom}
+            >
+              + Add Room
+            </button>
+          </div>
+        );
 
-    // Main Survey App Component
-    const SurveyApp = () => {
-      const [project, setProject] = React.useState({
-        id: uuidv4(),
-        timestamp: new Date().toISOString(),
-        header: 'Technology Integrator Survey - Control4',
-        floors: [],
-        equipmentRoom: null
-      });
-
-      const floorRefs = React.useRef([]);
-
-      // Initialize EmailJS
-      React.useEffect(() => {
-        if (window.emailjs) {
-          emailjs.init('tD7k4sRjN8tewRNTb');
-        }
-      }, []);
-
-      // Load and save survey data
-      React.useEffect(() => {
-        try {
-          const savedSurvey = localStorage.getItem('survey');
-          if (savedSurvey) {
-            setProject(JSON.parse(savedSurvey));
-          }
-        } catch (e) {
-          console.error('Failed to load survey from localStorage:', e);
-        }
-      }, []);
-
-      React.useEffect(() => {
-        try {
-          localStorage.setItem('survey', JSON.stringify(project));
-        } catch (e) {
-          console.error('Failed to save survey to localStorage:', e);
-        }
-      }, [project]);
-
-      const createNewRoom = () => ({
-        name: '',
-        control4: {
-          isEquipmentRoom: false,
-          videoStream: { enabled: false, notes: '' },
-          roomAudio: { enabled: false, wireless: false, speakers: 2, distribution: 'Stereo', notes: '' },
-          keypads: [],
-          lights: { enabled: false, count: 0, devices: [] },
-          shades: [],
-          touchscreens: [],
-          haloRemote: { enabled: false, color: 'Black', notes: '' }
-        },
-        locks: { enabled: true, locks: [] },
-        lighting: { banks: [] },
-        cameras: { enabled: false, cameras: [] }
-      });
-
-      const addFloor = () => {
-        try {
-          floorRefs.current.push(React.createRef());
-          setProject({
-            ...project,
-            floors: [...project.floors, {
-              name: '',
-              rooms: [createNewRoom()]
-            }]
+        // Main App Component
+        const SurveyApp = () => {
+          const [project, setProject] = React.useState({
+            id: uuidv4(),
+            timestamp: new Date().toISOString(),
+            header: 'Technology Integrator Survey - Control4',
+            floors: [],
+            equipmentRoom: null
           });
-          setTimeout(() => {
-            if (floorRefs.current[floorRefs.current.length - 1]?.current) {
-              floorRefs.current[floorRefs.current.length - 1].current.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 0);
-        } catch (e) {
-          console.error('Error adding floor:', e);
-          alert('Failed to add floor. Check console for details.');
-        }
-      };
 
-      const updateFloor = (floorIdx, updatedFloor) => {
-        try {
-          const newFloors = [...project.floors];
-          newFloors[floorIdx] = updatedFloor;
-          setProject({ ...project, floors: newFloors });
-        } catch (e) {
-          console.error('Error updating floor:', e);
-          alert('Failed to update floor. Check console for details.');
-        }
-      };
-
-      const deleteFloor = (floorIdx) => {
-        if (window.confirm(`Delete ${project.floors[floorIdx].name || `Floor ${floorIdx + 1}`} and all its rooms?`)) {
-          try {
-            const newFloors = project.floors.filter((_, i) => i !== floorIdx);
-            const newEquipmentRoom = project.equipmentRoom && project.equipmentRoom.floorIdx === floorIdx ? null : project.equipmentRoom;
-            floorRefs.current.splice(floorIdx, 1);
-            setProject({ ...project, floors: newFloors, equipmentRoom: newEquipmentRoom });
-          } catch (e) {
-            console.error('Error deleting floor:', e);
-            alert('Failed to delete floor. Check console for details.');
-          }
-        }
-      };
-
-      const copyFloor = (floorIdx) => {
-        if (window.confirm(`Copy ${project.floors[floorIdx].name || `Floor ${floorIdx + 1}`} and all its rooms?`)) {
-          try {
-            const newFloors = [...project.floors];
-            newFloors.splice(floorIdx + 1, 0, { ...project.floors[floorIdx] });
-            floorRefs.current.splice(floorIdx + 1, 0, React.createRef());
-            setProject({ ...project, floors: newFloors });
-            setTimeout(() => {
-              if (floorRefs.current[floorIdx + 1]?.current) {
-                floorRefs.current[floorIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
+          // Simple localStorage with single key
+          React.useEffect(() => {
+            try {
+              const saved = localStorage.getItem('unified-survey-data');
+              if (saved) {
+                setProject(JSON.parse(saved));
+                console.log('Loaded data:', JSON.parse(saved));
               }
-            }, 0);
-          } catch (e) {
-            console.error('Error copying floor:', e);
-            alert('Failed to copy floor. Check console for details.');
-          }
-        }
-      };
-
-      const setEquipmentRoom = (floorIdx, roomIdx) => {
-        try {
-          const current = project.equipmentRoom;
-          if (current && current.floorIdx === floorIdx && current.roomIdx === roomIdx) {
-            const newFloors = [...project.floors];
-            newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = false;
-            setProject({ ...project, floors: newFloors, equipmentRoom: null });
-          } else {
-            const newFloors = [...project.floors];
-            if (current) {
-              newFloors[current.floorIdx].rooms[current.roomIdx].control4.isEquipmentRoom = false;
+            } catch (e) {
+              console.error('Failed to load:', e);
             }
-            newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = true;
-            setProject({ ...project, floors: newFloors, equipmentRoom: { floorIdx, roomIdx } });
-          }
-        } catch (e) {
-          console.error('Error setting equipment room:', e);
-          alert('Failed to set equipment room. Check console for details.');
-        }
-      };
+          }, []);
 
-      const updateHeader = (newHeader) => {
-        setProject({ ...project, header: newHeader });
-      };
+          React.useEffect(() => {
+            try {
+              localStorage.setItem('unified-survey-data', JSON.stringify(project));
+              console.log('Saved data:', project);
+            } catch (e) {
+              console.error('Failed to save:', e);
+            }
+          }, [project]);
 
-      const formatSurveyForEmail = (project) => {
-        let csv = 'Quantity,Model,Location,Manufacturer,System,Custom Field 12\n';
-        
-        // Add Control4 devices to CSV
-        project.floors.forEach((floor, floorIdx) => {
-          floor.rooms.forEach((room, roomIdx) => {
-            const floorName = floor.name || `Floor ${floorIdx + 1}`;
-            const roomName = room.name || `Room ${roomIdx + 1}`;
-            const location = `${floorName}: ${roomName}`;
-            const c4 = room.control4;
-
-            // Add keypads
-            c4.keypads.forEach((keypad, idx) => {
-              csv += `1,C4-KP7,"${location}",Control4,Smart Home System,"Keypad ${idx + 1}: ${keypad.notes || ''}"\n`;
+          // Floor management
+          const addFloor = () => {
+            setProject({
+              ...project,
+              floors: [...project.floors, {
+                name: '',
+                rooms: [createStandardRoom()]
+              }]
             });
-
-            // Add touchscreens
-            c4.touchscreens.forEach((screen, idx) => {
-              const model = screen.size === '7"' ? 'C4-TS7' : 'C4-TS10';
-              csv += `1,${model},"${location}",Control4,Smart Home System,"Touchscreen ${idx + 1}: ${screen.notes || ''}"\n`;
-            });
-
-            // Add halo remote
-            if (c4.haloRemote.enabled) {
-              const model = c4.haloRemote.color === 'Black' ? 'C4-HALO-BK' : 'C4-HALO-SV';
-              csv += `1,${model},"${location}",Control4,Smart Home System,"Halo Remote: ${c4.haloRemote.notes || ''}"\n`;
-            }
-
-            // Add controlled lights
-            if (c4.lights.enabled) {
-              c4.lights.devices.forEach((device, idx) => {
-                csv += `1,C4-LIGHT,"${location}",Control4,Smart Home System,"Light ${idx + 1}: ${device.notes || ''}"\n`;
-              });
-            }
-
-            // Add shades
-            c4.shades.forEach((shade, idx) => {
-              csv += `1,C4-SHADE,"${location}",Control4,Smart Home System,"Shade ${idx + 1}: ${shade.notes || ''}"\n`;
-            });
-
-            // Add video stream controllers
-            if (c4.videoStream.enabled) {
-              csv += `1,EA-1,"${location}",Control4,Smart Home System,"Video Stream Controller: ${c4.videoStream.notes || ''}"\n`;
-            }
-
-            // Add room audio
-            if (c4.roomAudio.enabled) {
-              const audioType = c4.roomAudio.wireless ? 'Wireless' : 'Wired';
-              const notes = `${audioType} Audio - ${c4.roomAudio.distribution} - ${c4.roomAudio.speakers} speakers: ${c4.roomAudio.notes || ''}`;
-              csv += `1,C4-AUDIO,"${location}",Control4,Smart Home System,"${notes}"\n`;
-            }
-          });
-        });
-
-        return csv;
-      };
-
-      const exportSurvey = () => {
-        try {
-          const readableSurvey = formatSurveyForEmail(project);
-          console.log('Formatted Email Content (CSV):', readableSurvey);
-
-          if (!window.emailjs) {
-            alert('EmailJS is not loaded. Please check your network and try again.');
-            return;
-          }
-
-          const templateParams = {
-            survey_data: readableSurvey,
-            to_email: 'accounting@yourdomain.com',
           };
 
-          emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
-            .then((response) => {
-              console.log('Email sent successfully:', response.status, response.text);
-              alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
-            })
-            .catch((error) => {
-              console.error('Failed to send email:', error);
-              alert('Failed to send survey. Check console for details.');
+          const updateFloor = (floorIdx, updatedFloor) => {
+            const newFloors = [...project.floors];
+            newFloors[floorIdx] = updatedFloor;
+            setProject({ ...project, floors: newFloors });
+          };
+
+          const deleteFloor = (floorIdx) => {
+            if (window.confirm(`Delete ${project.floors[floorIdx].name || `Floor ${floorIdx + 1}`}?`)) {
+              const newFloors = project.floors.filter((_, i) => i !== floorIdx);
+              setProject({ ...project, floors: newFloors });
+            }
+          };
+
+          const copyFloor = (floorIdx) => {
+            const newFloors = [...project.floors];
+            newFloors.splice(floorIdx + 1, 0, { ...project.floors[floorIdx] });
+            setProject({ ...project, floors: newFloors });
+          };
+
+          const setEquipmentRoom = (floorIdx, roomIdx) => {
+            const newFloors = [...project.floors];
+            // Clear existing equipment room
+            if (project.equipmentRoom) {
+              newFloors[project.equipmentRoom.floorIdx].rooms[project.equipmentRoom.roomIdx].control4.isEquipmentRoom = false;
+            }
+            // Set new equipment room
+            newFloors[floorIdx].rooms[roomIdx].control4.isEquipmentRoom = true;
+            setProject({ 
+              ...project, 
+              floors: newFloors, 
+              equipmentRoom: { floorIdx, roomIdx } 
             });
-        } catch (e) {
-          console.error('Error exporting survey:', e);
-          alert('Failed to export survey. Check console for details.');
-        }
-      };
+          };
 
-      return (
-        <div className="max-w-4xl w-full mx-auto">
-          <div className="mb-4">
-            <input
-              type="text"
-              value={project.header}
-              onChange={(e) => updateHeader(e.target.value)}
-              className="text-xl sm:text-2xl font-bold border p-3 rounded w-full"
-              placeholder="Enter survey title"
-            />
-          </div>
-          <div className="flex gap-2 mb-4 flex-wrap">
-            <a
-              href="Control4.html"
-              className={`px-4 py-2 rounded ${window.location.pathname.includes('Control4.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              Control4
-            </a>
-            <a
-              href="Lighting.html"
-              className={`px-4 py-2 rounded ${window.location.pathname.includes('Lighting.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              Lighting
-            </a>
-            <a
-              href="Locks.html"
-              className={`px-4 py-2 rounded ${window.location.pathname.includes('Locks.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              Locks
-            </a>
-            <a
-              href="Cameras.html"
-              className={`px-4 py-2 rounded ${window.location.pathname.includes('Cameras.html') ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              Cameras
-            </a>
-          </div>
-          <div className="overflow-auto">
-            {project.floors.map((floor, idx) => (
-              <Floor
-                key={idx}
-                floor={floor}
-                index={idx}
-                updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
-                addRoom={() => {
-                  try {
-                    const newRoom = createNewRoom();
-                    updateFloor(idx, {
-                      ...floor,
-                      rooms: [...floor.rooms, newRoom]
-                    });
-                  } catch (e) {
-                    console.error('Error adding room:', e);
-                    alert('Failed to add room. Check console for details.');
-                  }
-                }}
-                deleteFloor={deleteFloor}
-                copyFloor={copyFloor}
-                floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
-                setEquipmentRoom={setEquipmentRoom}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full sm:w-auto"
-              onClick={addFloor}
-            >
-              + Add Floor
-            </button>
-            <button
-              className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto"
-              onClick={exportSurvey}
-            >
-              Export Survey
-            </button>
-          </div>
-        </div>
-      );
-    };
+          // Enhanced updateFloor that includes setEquipmentRoom
+          const enhancedUpdateFloor = (floorIdx, updatedFloor) => {
+            updateFloor(floorIdx, updatedFloor);
+          };
+          enhancedUpdateFloor.setEquipmentRoom = setEquipmentRoom;
 
-    // Error Boundary Component
-    class ErrorBoundary extends React.Component {
-      state = { hasError: false, error: null };
-
-      static getDerivedStateFromError(error) {
-        return { hasError: true, error };
-      }
-
-      componentDidCatch(error, errorInfo) {
-        console.error('ErrorBoundary caught:', error, errorInfo);
-      }
-
-      render() {
-        if (this.state.hasError) {
           return (
-            <div className="p-4 bg-red-100 text-red-700 rounded">
-              <h2>Something went wrong.</h2>
-              <p>{this.state.error?.message || 'Unknown error'}</p>
-              <p>Check the console for details and try refreshing the page.</p>
+            <div className="max-w-4xl mx-auto p-4">
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={project.header}
+                  onChange={(e) => setProject({ ...project, header: e.target.value })}
+                  className="text-2xl font-bold border p-3 rounded w-full"
+                  placeholder="Enter survey title"
+                />
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <span className="px-4 py-2 rounded bg-blue-500 text-white">Control4</span>
+                <span className="px-4 py-2 rounded bg-gray-200">Lighting (Coming Soon)</span>
+                <span className="px-4 py-2 rounded bg-gray-200">Locks (Coming Soon)</span>
+                <span className="px-4 py-2 rounded bg-gray-200">Cameras (Coming Soon)</span>
+              </div>
+
+              {/* Control4 Summary */}
+              {(() => {
+                let totalDevices = 0;
+                let videoRooms = 0;
+                let audioZones = 0;
+
+                project.floors.forEach(floor => {
+                  floor.rooms.forEach(room => {
+                    totalDevices += room.control4.keypads.length;
+                    totalDevices += room.control4.touchscreens.length;
+                    totalDevices += room.control4.haloRemote.enabled ? 1 : 0;
+                    if (room.control4.videoStream.enabled) videoRooms++;
+                    if (room.control4.roomAudio.enabled) audioZones++;
+                  });
+                });
+
+                if (totalDevices > 0 || videoRooms > 0 || audioZones > 0) {
+                  return (
+                    <div className="mb-4 p-4 bg-green-50 rounded shadow">
+                      <h3 className="text-lg font-semibold mb-2">Control4 System Summary</h3>
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">{totalDevices}</div>
+                          <div className="text-sm">Total Devices</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">{videoRooms}</div>
+                          <div className="text-sm">Video Rooms</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600">{audioZones}</div>
+                          <div className="text-sm">Audio Zones</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {project.floors.map((floor, idx) => (
+                <Floor
+                  key={idx}
+                  floor={floor}
+                  index={idx}
+                  updateFloor={(updatedFloor) => enhancedUpdateFloor(idx, updatedFloor)}
+                  addRoom={() => {
+                    const newFloor = {
+                      ...floor,
+                      rooms: [...floor.rooms, createStandardRoom()]
+                    };
+                    updateFloor(idx, newFloor);
+                  }}
+                  deleteFloor={() => deleteFloor(idx)}
+                  copyFloor={() => copyFloor(idx)}
+                />
+              ))}
+
+              <div className="flex gap-4">
+                <button
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  onClick={addFloor}
+                >
+                  + Add Floor
+                </button>
+                <button
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  onClick={() => alert('Export functionality will be added once all systems are working!')}
+                >
+                  Export Survey (Coming Soon)
+                </button>
+              </div>
+
+              {project.floors.length === 0 && (
+                <div className="text-center p-8 bg-gray-50 rounded mt-4">
+                  <p className="text-gray-600 mb-4">No floors added yet. Click "Add Floor" to get started!</p>
+                </div>
+              )}
             </div>
           );
-        }
-        return this.props.children;
-      }
-    }
+        };
 
-    // Render the app
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(
-      <ErrorBoundary>
-        <SurveyApp />
-      </ErrorBoundary>
-    );
-  </script>
+        // Error Boundary
+        class ErrorBoundary extends React.Component {
+          state = { hasError: false };
+          static getDerivedStateFromError(error) {
+            return { hasError: true };
+          }
+          componentDidCatch(error, errorInfo) {
+            console.error('Error:', error, errorInfo);
+          }
+          render() {
+            if (this.state.hasError) {
+              return <div className="p-4 bg-red-100 text-red-700 rounded">Something went wrong. Check console.</div>;
+            }
+            return this.props.children;
+          }
+        }
+
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+          <ErrorBoundary>
+            <SurveyApp />
+          </ErrorBoundary>
+        );
+    </script>
 </body>
 </html>
