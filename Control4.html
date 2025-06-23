@@ -321,16 +321,11 @@
 
     // Room Component
     const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, roomRef, setEquipmentRoom }) => (
-      <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow overflow-x-hidden">
+      <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow">
         <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
           <input
             type="text"
             value={room.name}
-            onFocus={() => updateRoom({ ...room, name: '' })}
-            onBlur={(e) => {
-              const value = e.target.value.trim();
-              updateRoom({ ...room, name: value || `Room ${roomIdx + 1}` });
-            }}
             onChange={(e) => updateRoom({ ...room, name: e.target.value })}
             placeholder={`Room ${roomIdx + 1}`}
             className="text-md font-semibold border p-3 rounded w-full sm:flex-1"
@@ -368,16 +363,11 @@
       }, [index, floor.rooms.length]);
 
       return (
-        <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow overflow-x-hidden">
+        <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow">
           <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
             <input
               type="text"
               value={floor.name}
-              onFocus={() => updateFloor({ ...floor, name: '' })}
-              onBlur={(e) => {
-                const value = e.target.value.trim();
-                updateFloor({ ...floor, name: value || `Floor ${index + 1}` });
-              }}
               onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
               placeholder={`Floor ${index + 1}`}
               className="text-lg font-bold border p-3 rounded w-full sm:flex-1"
@@ -397,8 +387,7 @@
               </button>
             </div>
           </div>
-          <div className="overflow-auto">
-            {floor.rooms.map((room, roomIdx) => (
+          {floor.rooms.map((room, roomIdx) => (
               <Room
                 key={roomIdx}
                 room={room}
@@ -433,7 +422,6 @@
                 setEquipmentRoom={setEquipmentRoom}
               />
             ))}
-          </div>
           <button
             className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
             onClick={addRoom}
