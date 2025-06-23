@@ -554,7 +554,8 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${project.header || 'Control4-Survey'}-${new Date().toISOString().split('T')[0]}.csv`;
+            const fileName = `${project.header || 'Control4-Survey'}-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
