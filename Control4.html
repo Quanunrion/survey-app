@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/uuid@9.0.1/dist/umd/uuid.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -22,7 +22,7 @@
             return v.toString(16);
           });
         };
-        const uuidv4 = window.uuidv4 || generateFallbackId;
+        const uuidv4 = window.uuid?.v4 || generateFallbackId;
 
         // Constants
         const audioDistributions = ['Mono', 'Stereo', '2.1', '5.1', '7.1', '7.2', '7.2.4'];
@@ -554,7 +554,9 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const fileName = `${project.header || 'Control4-Survey'}-${new Date().toISOString().split('T')[0]}.csv`;
+            const projectHeader = project.header || 'Control4-Survey';
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = projectHeader + '-' + dateStr + '.csv';
             a.download = fileName;
             document.body.appendChild(a);
             a.click();
