@@ -29,6 +29,16 @@
         const touchscreenSizes = ['7"', '10"'];
         const haloColors = ['Black', 'Silver'];
 
+        // Device Model Mappings for DTools
+        const deviceModels = {
+          keypad: 'C4-KC120',
+          touchscreen7: 'C4-TSWMC07',
+          touchscreen10: 'C4-TSWMC10',
+          haloRemote: 'C4-HALO',
+          roomAudioWired: 'C4-AMP108',
+          roomAudioWireless: 'C4-WIRELESS-AUDIO'
+        };
+
         // Create standardized room template
         const createStandardRoom = () => ({
           name: '',
@@ -54,6 +64,88 @@
             cameras: [] 
           }
         });
+
+        // CSV Export Function
+        const generateCSV = (project) => {
+          const rows = [];
+          const headers = ['Quantity', 'Model', 'Location', 'Manufacturer', 'System', 'Custom Field 12'];
+          
+          rows.push(headers.join(','));
+
+          project.floors.forEach(floor => {
+            const floorName = floor.name || 'Unnamed Floor';
+            
+            floor.rooms.forEach(room => {
+              const roomLocation = `${floorName} - ${room.name || 'Unnamed Room'}`;
+              
+              // Keypads
+              if (room.control4.keypads.length > 0) {
+                rows.push([
+                  room.control4.keypads.length,
+                  deviceModels.keypad,
+                  roomLocation,
+                  'Control4',
+                  'Control4 System',
+                  room.control4.keypads.map(k => k.notes).filter(n => n).join('; ') || 'Configurable Keypad'
+                ].map(field => `"${field}"`).join(','));
+              }
+
+              // Touchscreens
+              room.control4.touchscreens.forEach(screen => {
+                const model = screen.size === '10"' ? deviceModels.touchscreen10 : deviceModels.touchscreen7;
+                rows.push([
+                  1,
+                  model,
+                  roomLocation,
+                  'Control4',
+                  'Control4 System',
+                  screen.notes || `${screen.size} Touchscreen`
+                ].map(field => `"${field}"`).join(','));
+              });
+
+              // Halo Remote
+              if (room.control4.haloRemote.enabled) {
+                rows.push([
+                  1,
+                  deviceModels.haloRemote,
+                  roomLocation,
+                  'Control4',
+                  'Control4 System',
+                  `${room.control4.haloRemote.color} Halo Remote${room.control4.haloRemote.notes ? ' - ' + room.control4.haloRemote.notes : ''}`
+                ].map(field => `"${field}"`).join(','));
+              }
+
+              // Room Audio
+              if (room.control4.roomAudio.enabled) {
+                const model = room.control4.roomAudio.wireless ? deviceModels.roomAudioWireless : deviceModels.roomAudioWired;
+                const notes = `${room.control4.roomAudio.speakers} speakers, ${room.control4.roomAudio.distribution} distribution${room.control4.roomAudio.notes ? ' - ' + room.control4.roomAudio.notes : ''}`;
+                
+                rows.push([
+                  1,
+                  model,
+                  roomLocation,
+                  'Control4',
+                  'Control4 System',
+                  notes
+                ].map(field => `"${field}"`).join(','));
+              }
+
+              // Video Stream (if enabled, add a note about video distribution)
+              if (room.control4.videoStream.enabled) {
+                rows.push([
+                  1,
+                  'C4-VIDEO-DIST',
+                  roomLocation,
+                  'Control4',
+                  'Control4 System',
+                  `Video Stream${room.control4.videoStream.notes ? ' - ' + room.control4.videoStream.notes : ''}`
+                ].map(field => `"${field}"`).join(','));
+              }
+            });
+          });
+
+          return rows.join('\n');
+        };
 
         // Control4 Room Component
         const Control4Room = ({ room, floorIdx, roomIdx, updateRoom, setEquipmentRoom }) => {
@@ -374,29 +466,102 @@
             equipmentRoom: null
           });
 
-          // Simple localStorage with single key
+          const [exportStatus, setExportStatus] = React.useState('');
+          const [emailConfig, setEmailConfig] = React.useState({
+            serviceId: '',
+            templateId: '',
+            userId: '',
+            recipientEmail: ''
+          });
+
+          // Load data from localStorage
           React.useEffect(() => {
             try {
               const saved = localStorage.getItem('unified-survey-data');
               if (saved) {
                 setProject(JSON.parse(saved));
-                console.log('Loaded data:', JSON.parse(saved));
+              }
+              
+              const emailSaved = localStorage.getItem('email-config');
+              if (emailSaved) {
+                setEmailConfig(JSON.parse(emailSaved));
               }
             } catch (e) {
               console.error('Failed to load:', e);
             }
           }, []);
 
+          // Save data to localStorage
           React.useEffect(() => {
             try {
               localStorage.setItem('unified-survey-data', JSON.stringify(project));
-              console.log('Saved data:', project);
             } catch (e) {
               console.error('Failed to save:', e);
             }
           }, [project]);
 
-          // Floor management
+          React.useEffect(() => {
+            try {
+              localStorage.setItem('email-config', JSON.stringify(emailConfig));
+            } catch (e) {
+              console.error('Failed to save email config:', e);
+            }
+          }, [emailConfig]);
+
+          // Export function
+          const exportSurvey = async () => {
+            if (!emailConfig.serviceId || !emailConfig.templateId || !emailConfig.userId || !emailConfig.recipientEmail) {
+              alert('Please configure EmailJS settings first (scroll down to Email Configuration section)');
+              return;
+            }
+
+            setExportStatus('Generating CSV...');
+            
+            try {
+              const csvData = generateCSV(project);
+              const projectName = project.header || 'Control4 Survey';
+              const timestamp = new Date().toLocaleDateString();
+              
+              setExportStatus('Sending email...');
+              
+              const result = await emailjs.send(
+                emailConfig.serviceId,
+                emailConfig.templateId,
+                {
+                  to_email: emailConfig.recipientEmail,
+                  project_name: projectName,
+                  csv_data: csvData,
+                  timestamp: timestamp,
+                  from_name: 'Survey App'
+                },
+                emailConfig.userId
+              );
+              
+              setExportStatus('✅ Export sent successfully!');
+              setTimeout(() => setExportStatus(''), 3000);
+              
+            } catch (error) {
+              console.error('Export failed:', error);
+              setExportStatus('❌ Export failed. Check console for details.');
+              setTimeout(() => setExportStatus(''), 5000);
+            }
+          };
+
+          // Download CSV locally
+          const downloadCSV = () => {
+            const csvData = generateCSV(project);
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${project.header || 'Control4-Survey'}-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          };
+
+          // Floor management functions
           const addFloor = () => {
             setProject({
               ...project,
@@ -524,7 +689,7 @@
                 />
               ))}
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 mb-6">
                 <button
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                   onClick={addFloor}
@@ -533,10 +698,62 @@
                 </button>
                 <button
                   className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                  onClick={() => alert('Export functionality will be added once all systems are working!')}
+                  onClick={exportSurvey}
+                  disabled={exportStatus.includes('...')}
                 >
-                  Export Survey (Coming Soon)
+                  📧 Email CSV Export
                 </button>
+                <button
+                  className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+                  onClick={downloadCSV}
+                >
+                  💾 Download CSV
+                </button>
+              </div>
+
+              {exportStatus && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                  {exportStatus}
+                </div>
+              )}
+
+              {/* Email Configuration */}
+              <div className="mb-6 p-4 bg-gray-50 rounded shadow">
+                <h3 className="text-lg font-semibold mb-3">EmailJS Configuration</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    value={emailConfig.serviceId}
+                    onChange={(e) => setEmailConfig({...emailConfig, serviceId: e.target.value})}
+                    placeholder="EmailJS Service ID"
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={emailConfig.templateId}
+                    onChange={(e) => setEmailConfig({...emailConfig, templateId: e.target.value})}
+                    placeholder="EmailJS Template ID"
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={emailConfig.userId}
+                    onChange={(e) => setEmailConfig({...emailConfig, userId: e.target.value})}
+                    placeholder="EmailJS User ID"
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="email"
+                    value={emailConfig.recipientEmail}
+                    onChange={(e) => setEmailConfig({...emailConfig, recipientEmail: e.target.value})}
+                    placeholder="Recipient Email"
+                    className="border p-2 rounded"
+                  />
+                </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  <p>To use email export, set up EmailJS at <a href="https://emailjs.com" target="_blank" className="text-blue-500 underline">emailjs.com</a></p>
+                  <p>Your email template should include variables: {{project_name}}, {{csv_data}}, {{timestamp}}, {{to_email}}</p>
+                </div>
               </div>
 
               {project.floors.length === 0 && (
