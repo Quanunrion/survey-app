@@ -651,12 +651,21 @@ const formatSurveyForEmail = (project) => {
             }
           }, []);
 
-          // Load and save survey data
+          // Standardize localStorage key across all pages
           React.useEffect(() => {
             try {
-              const savedSurvey = localStorage.getItem('survey');
+              const savedSurvey = localStorage.getItem('tech-integrator-survey');
               if (savedSurvey) {
-                setProject(JSON.parse(savedSurvey));
+                const loaded = JSON.parse(savedSurvey);
+                // Ensure all rooms have all system properties
+                loaded.floors = loaded.floors.map(floor => ({
+                  ...floor,
+                  rooms: floor.rooms.map(room => ({
+                    ...createNewRoom(),
+                    ...room
+                  }))
+                }));
+                setProject(loaded);
               }
             } catch (e) {
               console.error('Failed to load survey from localStorage:', e);
@@ -665,7 +674,7 @@ const formatSurveyForEmail = (project) => {
 
           React.useEffect(() => {
             try {
-              localStorage.setItem('survey', JSON.stringify(project));
+              localStorage.setItem('tech-integrator-survey', JSON.stringify(project));
             } catch (e) {
               console.error('Failed to save survey to localStorage:', e);
             }
@@ -683,27 +692,17 @@ const formatSurveyForEmail = (project) => {
               touchscreens: [],
               haloRemote: { enabled: false, color: 'Black', notes: '' }
             },
-            locks: {
-              enabled: true,
-              locks: [{
-                name: '',
-                lockType: 'Mortise',
-                lockFunction: 'Storeroom',
-                handing: 'Left Hand (LH)',
-                finish: '626 Satin Chrome',
-                keyway: 'Schlage C',
-                doorType: 'Wood',
-                doorThickness: '1-3/4"',
-                backset: '2-3/4"',
-                keying: 'Keyed Different (KD)',
-                fireRating: 'None',
-                adaCompliance: 'Compliant',
-                leverStyle: 'Rhodes',
-                notes: ''
-              }]
+            locks: { 
+              enabled: false, 
+              locks: [] 
             },
-            lighting: { banks: [] },
-            cameras: { enabled: false, cameras: [] }
+            lighting: { 
+              banks: [] 
+            },
+            cameras: { 
+              enabled: false, 
+              cameras: [] 
+            }
           });
 
           const addFloor = () => {
@@ -865,7 +864,7 @@ const formatSurveyForEmail = (project) => {
               emailjs.send('service_k7h0mzt', 'template_x7dnje2', templateParams)
                 .then((response) => {
                   console.log('Email sent successfully:', response.status, response.text);
-                  alert('Survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
+                  alert('Complete survey sent to accounting! Copy the email content into a .csv file for D-Tools.');
                 })
                 .catch((error) => {
                   console.error('Failed to send email:', error);
