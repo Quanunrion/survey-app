@@ -200,16 +200,11 @@
 
         // Room Component
         const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, roomRef }) => (
-          <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow overflow-x-hidden">
+          <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow">
             <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
               <input
                 type="text"
                 value={room.name}
-                onFocus={() => updateRoom({ ...room, name: '' })}
-                onBlur={(e) => {
-                  const value = e.target.value.trim();
-                  updateRoom({ ...room, name: value || `Room ${roomIdx + 1}` });
-                }}
                 onChange={(e) => updateRoom({ ...room, name: e.target.value })}
                 placeholder={`Room ${roomIdx + 1}`}
                 className="text-md font-semibold border p-3 rounded w-full sm:flex-1"
@@ -252,16 +247,11 @@
           }, [index, floor.rooms.length]);
 
           return (
-            <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow overflow-x-hidden">
+            <div ref={floorRef} className="mb-4 p-2 sm:p-4 bg-white rounded shadow">
               <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
                 <input
                   type="text"
                   value={floor.name}
-                  onFocus={() => updateFloor({ ...floor, name: '' })}
-                  onBlur={(e) => {
-                    const value = e.target.value.trim();
-                    updateFloor({ ...floor, name: value || `Floor ${index + 1}` });
-                  }}
                   onChange={(e) => updateFloor({ ...floor, name: e.target.value })}
                   placeholder={`Floor ${index + 1}`}
                   className="text-lg font-bold border p-3 rounded w-full sm:flex-1"
@@ -287,48 +277,46 @@
                   </button>
                 </div>
               </div>
-              <div className="overflow-auto">
-                {floor.rooms.map((room, roomIdx) => (
-                  <Room
-                    key={roomIdx}
-                    room={room}
-                    floorIdx={index}
-                    roomIdx={roomIdx}
-                    updateRoom={(updatedRoom) => {
-                      const newRooms = [...floor.rooms];
-                      newRooms[roomIdx] = updatedRoom;
+              {floor.rooms.map((room, roomIdx) => (
+                <Room
+                  key={roomIdx}
+                  room={room}
+                  floorIdx={index}
+                  roomIdx={roomIdx}
+                  updateRoom={(updatedRoom) => {
+                    const newRooms = [...floor.rooms];
+                    newRooms[roomIdx] = updatedRoom;
+                    updateFloor({ ...floor, rooms: newRooms });
+                  }}
+                  deleteRoom={() => {
+                    console.log(`Deleting room ${roomIdx} on floor ${index}`);
+                    if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                      const newRooms = floor.rooms.filter((_, i) => i !== roomIdx);
+                      roomRefs.current[index].splice(roomIdx, 1);
                       updateFloor({ ...floor, rooms: newRooms });
-                    }}
-                    deleteRoom={() => {
-                      console.log(`Deleting room ${roomIdx} on floor ${index}`);
-                      if (window.confirm(`Delete ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
-                        const newRooms = floor.rooms.filter((_, i) => i !== roomIdx);
-                        roomRefs.current[index].splice(roomIdx, 1);
-                        updateFloor({ ...floor, rooms: newRooms });
-                      } else {
-                        console.log('Delete room cancelled');
-                      }
-                    }}
-                    copyRoom={() => {
-                      console.log(`Copying room ${roomIdx} on floor ${index}`);
-                      if (window.confirm(`Copy ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
-                        const newRooms = [...floor.rooms];
-                        newRooms.splice(roomIdx + 1, 0, { ...room });
-                        roomRefs.current[index].splice(roomIdx + 1, 0, React.createRef());
-                        updateFloor({ ...floor, rooms: newRooms });
-                        setTimeout(() => {
-                          if (roomRefs.current[index][roomIdx + 1]?.current) {
-                            roomRefs.current[index][roomIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }, 0);
-                      } else {
-                        console.log('Copy room cancelled');
-                      }
-                    }}
-                    roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
-                  />
-                ))}
-              </div>
+                    } else {
+                      console.log('Delete room cancelled');
+                    }
+                  }}
+                  copyRoom={() => {
+                    console.log(`Copying room ${roomIdx} on floor ${index}`);
+                    if (window.confirm(`Copy ${room.name || `Room ${roomIdx + 1}`} and its contents?`)) {
+                      const newRooms = [...floor.rooms];
+                      newRooms.splice(roomIdx + 1, 0, { ...room });
+                      roomRefs.current[index].splice(roomIdx + 1, 0, React.createRef());
+                      updateFloor({ ...floor, rooms: newRooms });
+                      setTimeout(() => {
+                        if (roomRefs.current[index][roomIdx + 1]?.current) {
+                          roomRefs.current[index][roomIdx + 1].current.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }, 0);
+                    } else {
+                      console.log('Copy room cancelled');
+                    }
+                  }}
+                  roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
+                />
+              ))}
               <button
                 className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
                 onClick={addRoom}
@@ -608,42 +596,90 @@
                     roomTotal + (room.cameras?.enabled ? room.cameras.cameras.length : 0), 0), 0);
                 
                 if (totalCameras > 0) {
-                  let remainingCameras = totalCameras;
-                  const nvrs = [];
-                  
-                  while (remainingCameras > 0) {
-                    if (remainingCameras >= 16) {
-                      nvrs.push('16-Channel NVR');
-                      remainingCameras -= 16;
-                    } else if (remainingCameras >= 8) {
-                      nvrs.push('8-Channel NVR');
-                      remainingCameras -= 8;
-                    } else {
-                      nvrs.push('4-Channel NVR');
-                      remainingCameras -= 4;
+                  // Space-optimized NVR calculation algorithm
+                  const calculateOptimalNVRs = (cameraCount) => {
+                    const nvrs = [];
+                    let remaining = cameraCount;
+
+                    while (remaining > 0) {
+                      if (remaining > 8) {
+                        nvrs.push({ channels: 16, name: '16-Channel NVR' });
+                        remaining -= 16;
+                      } else if (remaining > 4) {
+                        nvrs.push({ channels: 8, name: '8-Channel NVR' });
+                        remaining -= 8;
+                      } else {
+                        nvrs.push({ channels: 4, name: '4-Channel NVR' });
+                        remaining -= 4;
+                      }
                     }
-                  }
+
+                    return nvrs;
+                  };
+
+                  const optimalNVRs = calculateOptimalNVRs(totalCameras);
+                  const totalNVRCount = optimalNVRs.length;
+                  const rackUnits = totalNVRCount; // Each NVR = 1U
+                  const totalChannels = optimalNVRs.reduce((sum, nvr) => sum + nvr.channels, 0);
+                  const unusedChannels = totalChannels - totalCameras;
 
                   return (
                     <div className="mb-4 p-4 bg-blue-50 rounded shadow">
                       <h3 className="text-lg font-semibold mb-2">Camera System Summary</h3>
-                      <p className="mb-2"><strong>Total Cameras:</strong> {totalCameras}</p>
-                      <p className="mb-2"><strong>Required NVRs:</strong> {nvrs.join(', ')}</p>
-                      <p className="text-sm text-blue-700">NVRs will be added to equipment rack calculations.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="mb-1"><strong>Total Cameras:</strong> {totalCameras}</p>
+                          <p className="mb-1"><strong>Total NVRs:</strong> {totalNVRCount}</p>
+                          <p className="mb-1"><strong>Rack Space:</strong> {rackUnits}U</p>
+                          <p className="mb-1"><strong>Total Channels:</strong> {totalChannels}</p>
+                          <p className="mb-1"><strong>Unused Channels:</strong> {unusedChannels}</p>
+                        </div>
+                        <div>
+                          <p className="mb-1"><strong>Space-Optimized Configuration:</strong></p>
+                          <ul className="text-sm">
+                            {optimalNVRs.map((nvr, index) => (
+                              <li key={index}>• {nvr.name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-2 bg-blue-100 rounded text-sm">
+                        <strong>Space Priority Examples:</strong>
+                        <div className="mt-1 text-xs text-blue-700">
+                          • 5 cameras = 1x 8-channel (1U) | 
+                          • 20 cameras = 2x 16-channel (2U) |
+                          • 25 cameras = 2x 16-channel (2U) - saves 1U vs 3 separate units
+                        </div>
+                      </div>
                     </div>
                   );
                 }
                 return null;
               })()}
 
-              <div className="overflow-auto">
-                {project.floors.map((floor, idx) => (
-                  <Floor
-                    key={idx}
-                    floor={floor}
-                    index={idx}
-                    updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
-                    addRoom={() => {
+              {project.floors.map((floor, idx) => (
+                <Floor
+                  key={idx}
+                  floor={floor}
+                  index={idx}
+                  updateFloor={(updatedFloor) => updateFloor(idx, updatedFloor)}
+                  addRoom={() => {
+                    try {
+                      const newRoom = createNewRoom();
+                      updateFloor(idx, {
+                        ...floor,
+                        rooms: [...floor.rooms, newRoom]
+                      });
+                    } catch (e) {
+                      console.error('Error adding room:', e);
+                      alert('Failed to add room. Check console for details.');
+                    }
+                  }}
+                  deleteFloor={deleteFloor}
+                  copyFloor={copyFloor}
+                  floorRef={floorRefs.current[idx] || (floorRefs.current[idx] = React.createRef())}
+                />
+              ))}dRoom={() => {
                       try {
                         const newRoom = createNewRoom();
                         updateFloor(idx, {
