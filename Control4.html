@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -22,7 +21,7 @@
             return v.toString(16);
           });
         };
-        const uuidv4 = window.uuid?.v4 || generateFallbackId;
+        const uuidv4 = generateFallbackId;
 
         // Constants
         const audioDistributions = ['Mono', 'Stereo', '2.1', '5.1', '7.1', '7.2', '7.2.4'];
@@ -76,7 +75,7 @@
             const floorName = floor.name || 'Unnamed Floor';
             
             floor.rooms.forEach(room => {
-              const roomLocation = `${floorName} - ${room.name || 'Unnamed Room'}`;
+              const roomLocation = floorName + ' - ' + (room.name || 'Unnamed Room');
               
               // Keypads
               if (room.control4.keypads.length > 0) {
@@ -87,7 +86,7 @@
                   'Control4',
                   'Control4 System',
                   room.control4.keypads.map(k => k.notes).filter(n => n).join('; ') || 'Configurable Keypad'
-                ].map(field => `"${field}"`).join(','));
+                ].map(field => '"' + field + '"').join(','));
               }
 
               // Touchscreens
@@ -99,26 +98,27 @@
                   roomLocation,
                   'Control4',
                   'Control4 System',
-                  screen.notes || `${screen.size} Touchscreen`
-                ].map(field => `"${field}"`).join(','));
+                  screen.notes || (screen.size + ' Touchscreen')
+                ].map(field => '"' + field + '"').join(','));
               });
 
               // Halo Remote
               if (room.control4.haloRemote.enabled) {
+                const haloNotes = room.control4.haloRemote.color + ' Halo Remote' + (room.control4.haloRemote.notes ? ' - ' + room.control4.haloRemote.notes : '');
                 rows.push([
                   1,
                   deviceModels.haloRemote,
                   roomLocation,
                   'Control4',
                   'Control4 System',
-                  `${room.control4.haloRemote.color} Halo Remote${room.control4.haloRemote.notes ? ' - ' + room.control4.haloRemote.notes : ''}`
-                ].map(field => `"${field}"`).join(','));
+                  haloNotes
+                ].map(field => '"' + field + '"').join(','));
               }
 
               // Room Audio
               if (room.control4.roomAudio.enabled) {
                 const model = room.control4.roomAudio.wireless ? deviceModels.roomAudioWireless : deviceModels.roomAudioWired;
-                const notes = `${room.control4.roomAudio.speakers} speakers, ${room.control4.roomAudio.distribution} distribution${room.control4.roomAudio.notes ? ' - ' + room.control4.roomAudio.notes : ''}`;
+                const notes = room.control4.roomAudio.speakers + ' speakers, ' + room.control4.roomAudio.distribution + ' distribution' + (room.control4.roomAudio.notes ? ' - ' + room.control4.roomAudio.notes : '');
                 
                 rows.push([
                   1,
@@ -127,19 +127,20 @@
                   'Control4',
                   'Control4 System',
                   notes
-                ].map(field => `"${field}"`).join(','));
+                ].map(field => '"' + field + '"').join(','));
               }
 
               // Video Stream (if enabled, add a note about video distribution)
               if (room.control4.videoStream.enabled) {
+                const videoNotes = 'Video Stream' + (room.control4.videoStream.notes ? ' - ' + room.control4.videoStream.notes : '');
                 rows.push([
                   1,
                   'C4-VIDEO-DIST',
                   roomLocation,
                   'Control4',
                   'Control4 System',
-                  `Video Stream${room.control4.videoStream.notes ? ' - ' + room.control4.videoStream.notes : ''}`
-                ].map(field => `"${field}"`).join(','));
+                  videoNotes
+                ].map(field => '"' + field + '"').join(','));
               }
             });
           });
