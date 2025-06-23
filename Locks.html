@@ -657,14 +657,24 @@ const formatSurveyForEmail = (project) => {
               const savedSurvey = localStorage.getItem('tech-integrator-survey');
               if (savedSurvey) {
                 const loaded = JSON.parse(savedSurvey);
-                // Ensure all rooms have all system properties
-                loaded.floors = loaded.floors.map(floor => ({
-                  ...floor,
-                  rooms: floor.rooms.map(room => ({
-                    ...createNewRoom(),
-                    ...room
-                  }))
-                }));
+                // Ensure all rooms have all system properties - DEEP MERGE
+                if (loaded.floors) {
+                  loaded.floors = loaded.floors.map(floor => ({
+                    name: floor.name || '',
+                    rooms: (floor.rooms || []).map(room => {
+                      const newRoom = createNewRoom();
+                      return {
+                        ...newRoom,
+                        ...room,
+                        control4: { ...newRoom.control4, ...(room.control4 || {}) },
+                        locks: { ...newRoom.locks, ...(room.locks || {}) },
+                        lighting: { ...newRoom.lighting, ...(room.lighting || {}) },
+                        cameras: { ...newRoom.cameras, ...(room.cameras || {}) }
+                      };
+                    })
+                  }));
+                }
+                console.log('Loaded survey data:', loaded);
                 setProject(loaded);
               }
             } catch (e) {
