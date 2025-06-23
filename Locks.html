@@ -1,4 +1,136 @@
-<!DOCTYPE html>
+const formatSurveyForEmail = (project) => {
+            let csv = 'Quantity,Model,Location,Manufacturer,System,Custom Field 12\n';
+
+            // CONTROL4: Add Control4 devices
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                if (room.control4) {
+                  const floorName = floor.name || `Floor ${floorIdx + 1}`;
+                  const roomName = room.name || `Room ${roomIdx + 1}`;
+                  const location = `${floorName}: ${roomName}`;
+                  const c4 = room.control4;
+
+                  // Add keypads
+                  c4.keypads.forEach((keypad, idx) => {
+                    csv += `1,C4-KP7,"${location}",Control4,Smart Home System,"Keypad ${idx + 1}: ${keypad.notes || ''}"\n`;
+                  });
+
+                  // Add touchscreens
+                  c4.touchscreens.forEach((screen, idx) => {
+                    const model = screen.size === '7"' ? 'C4-TS7' : 'C4-TS10';
+                    csv += `1,${model},"${location}",Control4,Smart Home System,"Touchscreen ${idx + 1}: ${screen.notes || ''}"\n`;
+                  });
+
+                  // Add halo remote
+                  if (c4.haloRemote.enabled) {
+                    const model = c4.haloRemote.color === 'Black' ? 'C4-HALO-BK' : 'C4-HALO-SV';
+                    csv += `1,${model},"${location}",Control4,Smart Home System,"Halo Remote: ${c4.haloRemote.notes || ''}"\n`;
+                  }
+
+                  // Add controlled lights
+                  if (c4.lights.enabled) {
+                    c4.lights.devices.forEach((device, idx) => {
+                      csv += `1,C4-LIGHT,"${location}",Control4,Smart Home System,"Light ${idx + 1}: ${device.notes || ''}"\n`;
+                    });
+                  }
+
+                  // Add shades
+                  c4.shades.forEach((shade, idx) => {
+                    csv += `1,C4-SHADE,"${location}",Control4,Smart Home System,"Shade ${idx + 1}: ${shade.notes || ''}"\n`;
+                  });
+
+                  // Add video stream controllers
+                  if (c4.videoStream.enabled) {
+                    csv += `1,EA-1,"${location}",Control4,Smart Home System,"Video Stream Controller: ${c4.videoStream.notes || ''}"\n`;
+                  }
+
+                  // Add room audio
+                  if (c4.roomAudio.enabled) {
+                    const audioType = c4.roomAudio.wireless ? 'Wireless' : 'Wired';
+                    const notes = `${audioType} Audio - ${c4.roomAudio.distribution} - ${c4.roomAudio.speakers} speakers: ${c4.roomAudio.notes || ''}`;
+                    csv += `1,C4-AUDIO,"${location}",Control4,Smart Home System,"${notes}"\n`;
+                  }
+                }
+              });
+            });
+
+            // LIGHTING: Add Lutron devices
+            const colorCodes = {
+              'White': 'WH', 'Light Almond': 'LA', 'Ivory': 'IV', 'Black': 'BL', 'Brilliant White': 'BW',
+              'Glacier White': 'GL', 'Snow': 'SW', 'Architectural White': 'RW', 'Lunar Grey': 'LG', 'Mist': 'MI',
+              'Pebble': 'PB', 'Cobblestone': 'CS', 'Biscuit': 'BI', 'Slate': 'SL', 'Sand': 'SD', 'Taupe': 'TP',
+              'Pumice': 'PM', 'Clay': 'CY', 'Sage': 'SA', 'Espresso': 'EP', 'Truffle': 'TF', 'Deep Sea': 'DE',
+              'Signal Red': 'SR', 'Midnight': 'MN'
+            };
+            const modelCodes = {
+              'Switch': 'RRST-8ANS-XX',
+              'Dimmer': 'RRST-PRO-N-XX',
+              'Keypad': 'RRST-W4B-XX',
+              'Fan': 'RRD-2ANF-XX',
+              'Companion Dimmer': 'RRST-RD-XX',
+              'Companion Switch': 'RRST-RS-XX',
+              'Remote Keypad': 'RRST-W4B-XX',
+              'Pico Remote': 'PJ2-4B-GWH-L31'
+            };
+
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                if (room.lighting && room.lighting.banks) {
+                  room.lighting.banks.forEach((bank, bankIdx) => {
+                    const floorName = floor.name || `Floor ${floorIdx + 1}`;
+                    const roomName = room.name || `Room ${roomIdx + 1}`;
+                    const bankName = bank.name || `Switch Bank ${bankIdx + 1}`;
+                    const location = `${floorName}: ${roomName}: ${bankName}`;
+                    bank.devices.forEach((device, devIdx) => {
+                      let model = modelCodes[device.type] || 'UNKNOWN';
+                      if (device.type !== 'Pico Remote') {
+                        model = model.replace('XX', colorCodes[bank.color] || 'WH');
+                      }
+                      const notes = device.notes ? `; Notes: ${device.notes}` : '';
+                      csv += `1,${model},"${location}",Lutron,Lighting System,"Device ${devIdx + 1}: ${device.type}${notes}"\n`;
+                    });
+                  });
+                }
+              });
+            });
+
+            // LOCKS: Add lock hardware
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                if (room.locks && room.locks.enabled) {
+                  const floorName = floor.name || `Floor ${floorIdx + 1}`;
+                  const roomName = room.name || `Room ${roomIdx + 1}`;
+                  const location = `${floorName}: ${roomName}`;
+                  room.locks.locks.forEach((lock, lockIdx) => {
+                    const lockName = lock.name || `Lock ${lockIdx + 1}`;
+                    const lockLocation = `${location}: ${lockName}`;
+                    const notes = [
+                      `Handing: ${lock.handing}`,
+                      `Lock Type: ${lock.lockType}`,
+                      `Function: ${lock.lockFunction}`,
+                      `Finish: ${lock.finish}`,
+                      `Keyway: ${lock.keyway}`,
+                      `Door Type: ${lock.doorType}`,
+                      `Door Thickness: ${lock.doorThickness}`,
+                      `Backset: ${lock.backset}`,
+                      `Keying: ${lock.keying}`,
+                      `Fire Rating: ${lock.fireRating}`,
+                      `ADA Compliance: ${lock.adaCompliance}`,
+                      `Lever Style: ${lock.leverStyle}`,
+                      lock.notes
+                    ].filter(Boolean).join('; ');
+                    csv += `1,${lock.lockType.replace(/\s+/g, '-')},"${lockLocation}",Generic,Lock System,"${notes}"\n`;
+                  });
+                }
+              });
+            });
+
+            // CAMERAS: Add cameras and NVRs
+            let totalCameras = 0;
+            project.floors.forEach((floor, floorIdx) => {
+              floor.rooms.forEach((room, roomIdx) => {
+                if (room.cameras && room.cameras.enabled) {
+                  <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -312,16 +444,11 @@
 
         // Room Component
         const Room = ({ room, floorIdx, roomIdx, updateRoom, deleteRoom, copyRoom, roomRef }) => (
-          <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow overflow-x-hidden">
+          <div ref={roomRef} className="ml-1 sm:ml-2 mb-4 p-2 sm:p-4 bg-gray-50 rounded shadow">
             <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2 flex-wrap">
               <input
                 type="text"
                 value={room.name}
-                onFocus={() => updateRoom({ ...room, name: '' })}
-                onBlur={(e) => {
-                  const value = e.target.value.trim();
-                  updateRoom({ ...room, name: value || `Room ${roomIdx + 1}` });
-                }}
                 onChange={(e) => updateRoom({ ...room, name: e.target.value })}
                 placeholder={`Room ${roomIdx + 1}`}
                 className="text-md font-semibold border p-3 rounded w-full sm:flex-1"
@@ -387,6 +514,70 @@
                   </button>
                 </div>
               </div>
+
+              {/* Locks System Summary */}
+              {(() => {
+                let totalLocks = 0;
+                const lockTypeCounts = {};
+                const functionCounts = {};
+                const handingCounts = {};
+                const finishCounts = {};
+
+                project.floors.forEach((floor) => {
+                  floor.rooms.forEach((room) => {
+                    if (room.locks && room.locks.enabled && room.locks.locks) {
+                      room.locks.locks.forEach((lock) => {
+                        totalLocks++;
+                        lockTypeCounts[lock.lockType] = (lockTypeCounts[lock.lockType] || 0) + 1;
+                        functionCounts[lock.lockFunction] = (functionCounts[lock.lockFunction] || 0) + 1;
+                        handingCounts[lock.handing] = (handingCounts[lock.handing] || 0) + 1;
+                        finishCounts[lock.finish] = (finishCounts[lock.finish] || 0) + 1;
+                      });
+                    }
+                  });
+                });
+
+                const topLockType = Object.entries(lockTypeCounts).sort(([,a], [,b]) => b - a)[0];
+                const topFunction = Object.entries(functionCounts).sort(([,a], [,b]) => b - a)[0];
+                const topHanding = Object.entries(handingCounts).sort(([,a], [,b]) => b - a)[0];
+                const topFinish = Object.entries(finishCounts).sort(([,a], [,b]) => b - a)[0];
+
+                if (totalLocks > 0) {
+                  return (
+                    <div className="mb-4 p-4 bg-orange-50 rounded shadow">
+                      <h3 className="text-lg font-semibold mb-2">Lock System Summary</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="mb-1"><strong>Total Locks:</strong> {totalLocks}</p>
+                          <p className="mb-1"><strong>Most Common Type:</strong> {topLockType?.[0] || 'None'} ({topLockType?.[1] || 0})</p>
+                          <p className="mb-1"><strong>Most Common Function:</strong> {topFunction?.[0] || 'None'} ({topFunction?.[1] || 0})</p>
+                          <p className="mb-1"><strong>Most Common Finish:</strong> {topFinish?.[0] || 'None'}</p>
+                        </div>
+                        <div>
+                          <p className="mb-1"><strong>Lock Type Breakdown:</strong></p>
+                          <ul className="text-sm">
+                            {Object.entries(lockTypeCounts)
+                              .sort(([,a], [,b]) => b - a)
+                              .slice(0, 4)
+                              .map(([type, count]) => (
+                                <li key={type}>• {count}x {type}</li>
+                              ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-2 bg-orange-100 rounded text-sm">
+                        <strong>Common Specifications:</strong>
+                        <div className="mt-1 text-xs text-orange-700">
+                          Handing: {topHanding?.[0] || 'None'} ({topHanding?.[1] || 0}) | 
+                          Finish: {topFinish?.[0] || 'None'} ({topFinish?.[1] || 0})
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="overflow-auto">
                 {floor.rooms.map((room, roomIdx) => (
                   <Room
@@ -428,7 +619,6 @@
                     roomRef={roomRefs.current[index]?.[roomIdx] || React.createRef()}
                   />
                 ))}
-              </div>
               <button
                 className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
                 onClick={addRoom}
@@ -593,38 +783,61 @@
             setProject({ ...project, header: newHeader });
           };
 
-          const formatSurveyForEmail = (project) => {
-            let csv = 'Quantity,Model,Location,Manufacturer,System,Custom Field 12\n';
-
-            project.floors.forEach((floor, floorIdx) => {
-              floor.rooms.forEach((room, roomIdx) => {
-                if (room.locks && room.locks.enabled) {
+                if (room.cameras && room.cameras.enabled) {
                   const floorName = floor.name || `Floor ${floorIdx + 1}`;
                   const roomName = room.name || `Room ${roomIdx + 1}`;
                   const location = `${floorName}: ${roomName}`;
-                  room.locks.locks.forEach((lock, lockIdx) => {
-                    const lockName = lock.name || `Lock ${lockIdx + 1}`;
-                    const lockLocation = `${location}: ${lockName}`;
+                  
+                  room.cameras.cameras.forEach((camera, cameraIdx) => {
+                    totalCameras++;
+                    const cameraName = camera.name || `Camera ${cameraIdx + 1}`;
+                    const cameraLocation = `${location}: ${cameraName}`;
+                    const height = camera.installationHeight === 'Custom' ? camera.customHeight : camera.installationHeight;
+                    const area = camera.areaOfFocus === 'Custom' ? camera.customArea : camera.areaOfFocus;
                     const notes = [
-                      `Handing: ${lock.handing}`,
-                      `Lock Type: ${lock.lockType}`,
-                      `Function: ${lock.lockFunction}`,
-                      `Finish: ${lock.finish}`,
-                      `Keyway: ${lock.keyway}`,
-                      `Door Type: ${lock.doorType}`,
-                      `Door Thickness: ${lock.doorThickness}`,
-                      `Backset: ${lock.backset}`,
-                      `Keying: ${lock.keying}`,
-                      `Fire Rating: ${lock.fireRating}`,
-                      `ADA Compliance: ${lock.adaCompliance}`,
-                      `Lever Style: ${lock.leverStyle}`,
-                      lock.notes
+                      `Body Type: ${camera.bodyType}`,
+                      `Color: ${camera.color}`,
+                      `Installation Height: ${height}`,
+                      `Area of Focus: ${area}`,
+                      camera.notes
                     ].filter(Boolean).join('; ');
-                    csv += `1,${lock.lockType.replace(/\s+/g, '-')},"${lockLocation}",Generic,Lock System,"${notes}"\n`;
+                    csv += `1,${camera.bodyType.replace(/\s+/g, '-')}-Camera,"${cameraLocation}",Alarm.com,Security System,"${notes}"\n`;
                   });
                 }
               });
             });
+
+            // Add NVRs if cameras exist
+            if (totalCameras > 0) {
+              const equipmentRoom = project.equipmentRoom;
+              const equipmentRoomLocation = equipmentRoom ? 
+                `${project.floors[equipmentRoom.floorIdx].name || `Floor ${equipmentRoom.floorIdx + 1}`}: ${project.floors[equipmentRoom.floorIdx].rooms[equipmentRoom.roomIdx].name || `Room ${equipmentRoom.roomIdx + 1}`}` : 
+                'Equipment Rack';
+
+              // Space-optimized NVR calculation
+              const calculateOptimalNVRs = (cameraCount) => {
+                const nvrs = [];
+                let remaining = cameraCount;
+                while (remaining > 0) {
+                  if (remaining > 8) {
+                    nvrs.push({ channels: 16, model: 'ADC-CSVR116', name: '16-Channel Commercial NVR' });
+                    remaining -= 16;
+                  } else if (remaining > 4) {
+                    nvrs.push({ channels: 8, model: 'ADC-CSVR108', name: '8-Channel Commercial NVR' });
+                    remaining -= 8;
+                  } else {
+                    nvrs.push({ channels: 4, model: 'ADC-CSVR104', name: '4-Channel Commercial NVR' });
+                    remaining -= 4;
+                  }
+                }
+                return nvrs;
+              };
+
+              const optimalNVRs = calculateOptimalNVRs(totalCameras);
+              optimalNVRs.forEach((nvr) => {
+                csv += `1,${nvr.model},"${equipmentRoomLocation}",Alarm.com,Security System,"${nvr.name} (${nvr.channels} channels)"\n`;
+              });
+            }
 
             return csv;
           };
@@ -737,7 +950,7 @@
                   className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full sm:w-auto"
                   onClick={exportSurvey}
                 >
-                  Export Survey
+                  Export Complete Survey
                 </button>
               </div>
             </div>
