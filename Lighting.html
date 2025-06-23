@@ -340,12 +340,21 @@
             }
           }, []);
 
-          // Load and save survey data
+          // Standardize localStorage key across all pages
           React.useEffect(() => {
             try {
-              const savedSurvey = localStorage.getItem('survey');
+              const savedSurvey = localStorage.getItem('tech-integrator-survey');
               if (savedSurvey) {
-                setProject(JSON.parse(savedSurvey));
+                const loaded = JSON.parse(savedSurvey);
+                // Ensure all rooms have all system properties
+                loaded.floors = loaded.floors.map(floor => ({
+                  ...floor,
+                  rooms: floor.rooms.map(room => ({
+                    ...createNewRoom(),
+                    ...room
+                  }))
+                }));
+                setProject(loaded);
               }
             } catch (e) {
               console.error('Failed to load survey from localStorage:', e);
@@ -354,7 +363,7 @@
 
           React.useEffect(() => {
             try {
-              localStorage.setItem('survey', JSON.stringify(project));
+              localStorage.setItem('tech-integrator-survey', JSON.stringify(project));
             } catch (e) {
               console.error('Failed to save survey to localStorage:', e);
             }
@@ -372,9 +381,17 @@
               touchscreens: [],
               haloRemote: { enabled: false, color: 'Black', notes: '' }
             },
-            locks: { enabled: false, locks: [] },
-            lighting: { banks: [] },
-            cameras: { enabled: false, cameras: [] }
+            locks: { 
+              enabled: false, 
+              locks: [] 
+            },
+            lighting: { 
+              banks: [] 
+            },
+            cameras: { 
+              enabled: false, 
+              cameras: [] 
+            }
           });
 
           const addFloor = () => {
