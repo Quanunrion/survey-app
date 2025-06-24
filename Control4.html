@@ -433,10 +433,10 @@
 
           const [exportStatus, setExportStatus] = React.useState('');
           const [emailConfig, setEmailConfig] = React.useState({
-            serviceId: '',
-            templateId: '',
-            userId: '',
-            recipientEmail: ''
+            serviceId: 'service_k7h0mzt',
+            templateId: 'template_x7dnje2',
+            userId: 'tD7k4sRjN8tewRNTb',
+            recipientEmail: 'info@fullyautomated.us'
           });
 
           // Load from localStorage
@@ -475,11 +475,6 @@
 
           // Export functions
           const exportSurvey = async () => {
-            if (!emailConfig.serviceId || !emailConfig.templateId || !emailConfig.userId || !emailConfig.recipientEmail) {
-              alert('Please configure EmailJS settings first');
-              return;
-            }
-
             setExportStatus('Generating CSV...');
             
             try {
@@ -677,39 +672,39 @@
               )}
 
               <div className="mb-6 p-4 bg-gray-50 rounded shadow">
-                <h3 className="text-lg font-semibold mb-3">EmailJS Configuration</h3>
+                <h3 className="text-lg font-semibold mb-3">EmailJS Configuration (Pre-configured)</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <input
                     type="text"
                     value={emailConfig.serviceId}
                     onChange={(e) => setEmailConfig({...emailConfig, serviceId: e.target.value})}
                     placeholder="EmailJS Service ID"
-                    className="border p-2 rounded"
+                    className="border p-2 rounded bg-green-50"
                   />
                   <input
                     type="text"
                     value={emailConfig.templateId}
                     onChange={(e) => setEmailConfig({...emailConfig, templateId: e.target.value})}
                     placeholder="EmailJS Template ID"
-                    className="border p-2 rounded"
+                    className="border p-2 rounded bg-green-50"
                   />
                   <input
                     type="text"
                     value={emailConfig.userId}
                     onChange={(e) => setEmailConfig({...emailConfig, userId: e.target.value})}
-                    placeholder="EmailJS User ID"
-                    className="border p-2 rounded"
+                    placeholder="EmailJS Public Key"
+                    className="border p-2 rounded bg-green-50"
                   />
                   <input
                     type="email"
                     value={emailConfig.recipientEmail}
                     onChange={(e) => setEmailConfig({...emailConfig, recipientEmail: e.target.value})}
                     placeholder="Recipient Email"
-                    className="border p-2 rounded"
+                    className="border p-2 rounded bg-green-50"
                   />
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
-                  <p>Setup EmailJS at <a href="https://emailjs.com" target="_blank" className="text-blue-500 underline">emailjs.com</a></p>
+                  <p>✅ EmailJS is pre-configured and ready to use!</p>
                   <p>Template variables: project_name, csv_data, timestamp, to_email</p>
                 </div>
               </div>
