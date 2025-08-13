@@ -1,0 +1,85 @@
+/* Fully Automated Site Survey – Theme (palette + components + swatches) */
+:root{--bg:#071C2C;--bg2:#0A2438;--card:#0B1726;--ink:#E6E8EB;--muted:#9AA4B2;--blue:#0A3D62;--red:#C6282F;--white:#FFFFFF;--gray:#C9CFD6;--accent:#1AB2A8;--accent2:#2DD4BF;--focus:rgba(26,178,168,.25)}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);color:var(--ink)}
+.app{max-width:1200px;margin:0 auto;padding:12px}
+.card{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 0 0 1px rgba(255,255,255,.04)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.brand{display:flex;gap:10px;align-items:center}
+.logo{height:28px;width:auto;border-radius:6px}
+.title h1{font-size:18px;margin:0}
+.title small{color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#022;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.08)}
+.btn:focus{outline:3px solid var(--focus)}
+.layout{display:grid;grid-template-columns:300px 1fr 320px;gap:12px}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.right{order:3}.left{order:1}.center{order:2}}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.muted{color:var(--muted)}
+/* Floors & Rooms */
+.floorCard{background:rgba(255,255,255,.03);border-radius:10px;padding:8px;margin-bottom:8px}
+.floorHeader{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.floorHeader input{width:100%}
+.rooms{margin-top:8px}
+.roomBtn{display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px;margin-bottom:6px;background:rgba(255,255,255,.01)}
+.roomBtn.active{outline:2px solid var(--focus)}
+.inline{display:flex;gap:6px;align-items:center}
+.btn-sm{border:1px solid rgba(255,255,255,.08);background:transparent;color:var(--ink);padding:6px 8px;border-radius:8px;cursor:pointer}
+/* Tabs */
+.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:6px;margin-bottom:8px}
+.tab{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.05);cursor:pointer;white-space:nowrap}
+.tab.active{background:linear-gradient(90deg,var(--blue),var(--red));color:#fff;font-weight:700}
+/* Form controls */
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:transparent;color:inherit}
+/* High-contrast dropdowns for readability */
+select{background:#fff;color:#0B1726}
+option{background:#fff;color:#0B1726}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.col{flex:1 1 220px}
+.col2{flex:2 1 320px}
+.fit{flex:0 0 auto}
+.systemSummary{background:rgba(255,255,255,.03);padding:10px;border-radius:10px;margin-bottom:8px}
+.chip{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;margin-right:6px}
+.warn{background:rgba(198,40,47,.15);color:#ffd5d7;border:1px solid rgba(198,40,47,.35)}
+/* Color Swatches */
+.swatch{width:18px;height:18px;border-radius:6px;border:2px solid rgba(255,255,255,.35);cursor:pointer;outline:0}
+.swatch.is-selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--focus)}
+.swatchRow{display:flex;gap:6px;flex-wrap:wrap}
+/* Flow spacing */
+.mainContent>*+*{margin-top:8px}
+.summaryArea>*+*{margin-top:6px}
+/* ---- Preloaded shade swatch classes (instant paint, no inline styles) ---- */
+/* Control4 keypad colors: light → dark */
+.sw-c4-sw{background:linear-gradient(135deg,#FAFBFD,#E9EDF3)}
+.sw-c4-wh{background:linear-gradient(135deg,#FFFFFF,#F2F2F2)}
+.sw-c4-la{background:linear-gradient(135deg,#E9D9C7,#D4C1AC)}
+.sw-c4-bi{background:linear-gradient(135deg,#EADFCF,#D1C1A9)}
+.sw-c4-lg{background:linear-gradient(135deg,#D5D9E0,#A9B0BA)}
+.sw-c4-tp{background:linear-gradient(135deg,#B8A99A,#A19083)}
+.sw-c4-sg{background:linear-gradient(135deg,#B0B8C2,#87919B)}
+.sw-c4-au{background:linear-gradient(135deg,#C9CDD1,#8E959B)}
+.sw-c4-cf{background:linear-gradient(135deg,#8B6A58,#5D4437)}
+.sw-c4-bl{background:linear-gradient(135deg,#2B2B2B,#000)}
+.sw-c4-mb{background:linear-gradient(135deg,#1B1E24,#0E1116)}
+/* Control4 touchscreens */
+.sw-c4t-wh{background:linear-gradient(135deg,#FFFFFF,#ECECEC)}
+.sw-c4t-bl{background:linear-gradient(135deg,#1E1E1E,#000)}
+/* Lutron RA3 colors: light → dark */
+.sw-lut-wh{background:linear-gradient(135deg,#FFFFFF,#F2F2F2)}
+.sw-lut-sw{background:linear-gradient(135deg,#F5F7FA,#E9EDF5)}
+.sw-lut-mi{background:linear-gradient(135deg,#E8EFF7,#D8E4F2)}
+.sw-lut-bi{background:linear-gradient(135deg,#E6D8C7,#D7C8B4)}
+.sw-lut-la{background:linear-gradient(135deg,#E9D9C7,#D4C1AC)}
+.sw-lut-iv{background:linear-gradient(135deg,#EFE4CD,#E1D6BB)}
+.sw-lut-bl{background:linear-gradient(135deg,#1E1E1E,#000)}
+.sw-lut-mn{background:linear-gradient(135deg,#1B1E24,#0E1116)}
+/* Cameras (Luma W/B) */
+.sw-cam-w{background:linear-gradient(135deg,#FFFFFF,#ECECEC)}
+.sw-cam-b{background:linear-gradient(135deg,#1E1E1E,#000)}
+/* Networking jack colors (optional) */
+.sw-net-wh{background:linear-gradient(135deg,#FFFFFF,#ECECEC)}
+.sw-net-bu{background:linear-gradient(135deg,#6477C8,#1E3A8A)}
+.sw-net-gn{background:linear-gradient(135deg,#5DAF74,#166534)}
+.sw-net-rd{background:linear-gradient(135deg,#E06666,#991B1B)}
+.sw-net-bl{background:linear-gradient(135deg,#1E1E1E,#000)}
