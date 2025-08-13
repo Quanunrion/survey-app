@@ -4,14 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Fully Automated — Site Survey (Mobile)</title>
-  <!-- External CSS (injected at runtime from <template id="css"> to keep single-file canvas while honoring "external" request) -->
-  <link id="theme-css" rel="stylesheet" href="#">
+
+  <!-- Brand theme + components + preloaded shade swatches -->
+  <link rel="stylesheet" href="fa-theme.min.css" />
 </head>
 <body>
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='28' viewBox='0 0 140 28'%3E%3Crect width='140' height='28' rx='6' ry='6' fill='%23071C2C'/%3E%3Ctext x='10' y='19' font-family='Inter,Segoe UI,Arial' font-size='14' fill='%23E6E8EB'%3EFully Automated%3C/text%3E%3C/svg%3E" alt="Fully Automated" class="logo"/>
+        <!-- Lightweight inline logo to avoid external fetch -->
+        <img
+          alt="Fully Automated"
+          class="logo"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='28' viewBox='0 0 140 28'%3E%3Crect width='140' height='28' rx='6' ry='6' fill='%23071C2C'/%3E%3Ctext x='10' y='19' font-family='Inter,Segoe UI,Arial' font-size='14' fill='%23E6E8EB'%3EFully Automated%3C/text%3E%3C/svg%3E" />
         <div class="title">
           <h1>Site Survey — Mobile</h1>
           <small>Walkthrough: floors → rooms → systems</small>
@@ -24,7 +29,7 @@
       </div>
     </header>
 
-    <!-- Client / Project card -->
+    <!-- Client / Project -->
     <section class="card client">
       <div class="row">
         <div class="col">
@@ -57,8 +62,8 @@
     </section>
 
     <div class="layout">
-      <!-- LEFT: Floors & Rooms -->
-      <aside class="left card" id="leftPane">
+      <!-- Floors & Rooms -->
+      <aside class="left card">
         <div class="section-head">
           <strong>Floors & Rooms</strong>
           <button class="btn ghost" id="addFloorBtn">+ Floor</button>
@@ -66,7 +71,7 @@
         <div id="floorsList"></div>
       </aside>
 
-      <!-- CENTER: Systems -->
+      <!-- Systems -->
       <main class="center card">
         <div class="tabs" id="systemTabs"></div>
         <div id="mainContent" class="mainContent">
@@ -74,7 +79,7 @@
         </div>
       </main>
 
-      <!-- RIGHT: Summary -->
+      <!-- Summary -->
       <aside class="right card">
         <strong>Project Summary</strong>
         <div id="summaryArea" class="summaryArea"></div>
@@ -82,527 +87,7 @@
     </div>
   </div>
 
-  <!-- CSS template to be emitted as external stylesheet at runtime -->
-  <template id="css">
-  :root{--bg:#071C2C;--bg2:#0A2438;--card:#0B1726;--ink:#E6E8EB;--muted:#9AA4B2;--blue:#0A3D62;--red:#C6282F;--white:#FFFFFF;--gray:#C9CFD6;--accent:#1AB2A8;--accent2:#2DD4BF;--focus:rgba(26,178,168,.25)}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);color:var(--ink)}
-  .app{max-width:1200px;margin:0 auto;padding:12px}
-  .card{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 0 0 1px rgba(255,255,255,.04)}
-  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-  .brand{display:flex;gap:10px;align-items:center}
-  .logo{height:28px;width:auto;border-radius:6px}
-  .title h1{font-size:18px;margin:0}
-  .title small{color:var(--muted)}
-  .actions{display:flex;gap:8px;flex-wrap:wrap}
-  .btn{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#022;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
-  .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.08)}
-  .btn:focus{outline:3px solid var(--focus)}
-  .layout{display:grid;grid-template-columns:300px 1fr 320px;gap:12px}
-  @media(max-width:980px){.layout{grid-template-columns:1fr}.right{order:3}.left{order:1}.center{order:2}}
-  .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .muted{color:var(--muted)}
-  /* Floors & Rooms */
-  .floorCard{background:rgba(255,255,255,.03);border-radius:10px;padding:8px;margin-bottom:8px}
-  .floorHeader{display:flex;justify-content:space-between;gap:8px;align-items:center}
-  .floorHeader input{width:100%}
-  .rooms{margin-top:8px}
-  .roomBtn{display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px;margin-bottom:6px;background:rgba(255,255,255,.01)}
-  .roomBtn.active{outline:2px solid var(--focus)}
-  .inline{display:flex;gap:6px;align-items:center}
-  .btn-sm{border:1px solid rgba(255,255,255,.08);background:transparent;color:var(--ink);padding:6px 8px;border-radius:8px;cursor:pointer}
-  /* Tabs */
-  .tabs{display:flex;gap:6px;overflow:auto;padding-bottom:6px;margin-bottom:8px}
-  .tab{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.05);cursor:pointer;white-space:nowrap}
-  .tab.active{background:linear-gradient(90deg,var(--blue),var(--red));color:#fff;font-weight:700}
-  /* Form */
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,select,textarea{width:100%;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:transparent;color:inherit}
-  .row{display:flex;gap:8px;flex-wrap:wrap}
-  .col{flex:1 1 220px}
-  .col2{flex:2 1 320px}
-  .fit{flex:0 0 auto}
-  .systemSummary{background:rgba(255,255,255,.03);padding:10px;border-radius:10px;margin-bottom:8px}
-  .chip{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;margin-right:6px}
-  .swatch{width:18px;height:18px;border-radius:6px;border:1px solid rgba(255,255,255,.2);cursor:pointer}
-  .swatch.is-selected{outline:2px solid var(--accent)}
-  .swatchRow{display:flex;gap:6px;flex-wrap:wrap}
-  /* Overlap fixes */
-  .mainContent > * + *{margin-top:8px}
-  .summaryArea > * + *{margin-top:6px}
-  </template>
-
-  <script>
-  // ===== Brand palette (swatches) =====
-  const SWATCHES = [
-    {name:'White',val:'#FFFFFF'},{name:'Light Gray',val:'#C9CFD6'},{name:'Dark Gray',val:'#9AA4B2'},
-    {name:'Blue',val:'#0A3D62'},{name:'Navy',val:'#071C2C'},{name:'Red',val:'#C6282F'},
-    {name:'Teal',val:'#1AB2A8'},{name:'Black',val:'#000000'}
-  ];
-
-  // ===== CSV header (exact order) =====
-  const CSV_HEADERS = ['Quantity','Model','Location','Manufacturer','System','Custom Field 12'];
-  const SYSTEM_TABS = ['Control4','Lighting','Cameras','Security','Networking','Locks','Misc'];
-  const SYSTEM_TO_EXPORT = {
-    'Control4':'Control Systems','Lighting':'Lighting','Cameras':'Surveillance','Security':'Security Systems','Networking':'Networking'
-  };
-
-  // ===== App State =====
-  let state = {
-    client:{name:'',phone:'',email:'',address:''},
-    projectName:'',
-    floors:[], selectedFloorId:null, selectedRoomId:null,
-    selectedTab:'Control4',
-    settings:{cameraRetentionDays:30,cameraBitrateMbps:4,sparePercent:20},
-    racks:[]
-  };
-
-  // ===== Utilities =====
-  const uid=()=>Math.random().toString(36).slice(2,9);
-  const el=(q)=>document.querySelector(q);
-  const escape=(v)=>v==null?'':String(v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const csvCell=(v)=>{if(v==null)return'';const s=String(v).replace(/"/g,'""');return s.match(/[",\n]/)?`"${s}"`:s};
-
-  // ===== External CSS injection from template =====
-  (function injectCSS(){
-    const tpl=document.getElementById('css');
-    const blob=new Blob([tpl.innerHTML],{type:'text/css'});
-    const url=URL.createObjectURL(blob);
-    const link=document.getElementById('theme-css');
-    link.href=url;
-  })();
-
-  // ===== Floors / Rooms =====
-  function addFloor(name){ const fid=uid(); const f={id:fid,name:name||`Floor ${state.floors.length+1}`,rooms:[]}; state.floors.push(f); addRoom(fid,'Room 1'); selectRoom(fid,f.rooms[0].id); renderLeft(); renderTabs(); renderMain(); renderSummary(); }
-  function addRoom(fid,name){ const f=state.floors.find(x=>x.id===fid); if(!f) return; const rid=uid(); const room={id:rid,name:name||'New Room',notes:'',photos:[],isEquipmentRoom:false,control4:{videoStreams:0,audio:{enabled:false,wired:false,speakers:0,distribution:'Stereo'},keypads:[],touchscreens:[],remotes:[]},lighting:{banks:[]},cameras:[],security:{zones:[],panel:{present:false,type:'remote'}},networking:{banks:[]}}; f.rooms.push(room); }
-  function copyFloor(fid){ if(!confirm('Copy floor and its rooms?')) return; const f=state.floors.find(x=>x.id===fid); const nf=JSON.parse(JSON.stringify(f)); nf.id=uid(); nf.name=f.name+' (copy)'; nf.rooms.forEach(r=>r.id=uid()); state.floors.push(nf); renderLeft(); }
-  function deleteFloor(fid){ if(!confirm('Delete floor?')) return; state.floors=state.floors.filter(f=>f.id!==fid); const first=state.floors[0]; state.selectedFloorId=first?first.id:null; state.selectedRoomId=first&&first.rooms[0]?first.rooms[0].id:null; renderLeft(); renderMain(); renderSummary(); }
-  function copyRoom(fid,rid){ if(!confirm('Copy room?')) return; const f=state.floors.find(x=>x.id===fid); const r=f.rooms.find(x=>x.id===rid); const nr=JSON.parse(JSON.stringify(r)); nr.id=uid(); nr.name=r.name+' (copy)'; f.rooms.push(nr); renderLeft(); }
-  function deleteRoom(fid,rid){ if(!confirm('Delete room?')) return; const f=state.floors.find(x=>x.id===fid); f.rooms=f.rooms.filter(r=>r.id!==rid); if(state.selectedRoomId===rid){const r0=f.rooms[0]; state.selectedRoomId=r0?r0.id:null;} renderLeft(); renderMain(); renderSummary(); }
-  function selectRoom(fid,rid){ state.selectedFloorId=fid; state.selectedRoomId=rid; renderLeft(); renderMain(); }
-
-  // ===== Render Left Pane =====
-  const floorsList=document.getElementById('floorsList');
-  function renderLeft(){ floorsList.innerHTML=''; state.floors.forEach(f=>{
-    const card=document.createElement('div'); card.className='floorCard';
-    const header=document.createElement('div'); header.className='floorHeader';
-    const name=document.createElement('input'); name.value=f.name; name.oninput=(e)=>{f.name=e.target.value; renderSummary();};
-    const btns=document.createElement('div'); btns.className='inline';
-    const copy=document.createElement('button'); copy.className='btn-sm'; copy.textContent='Copy'; copy.onclick=()=>copyFloor(f.id);
-    const del=document.createElement('button'); del.className='btn-sm'; del.textContent='Del'; del.onclick=()=>deleteFloor(f.id);
-    header.appendChild(name); btns.appendChild(copy); btns.appendChild(del); header.appendChild(btns); card.appendChild(header);
-    const rooms=document.createElement('div'); rooms.className='rooms';
-    f.rooms.forEach(r=>{
-      const row=document.createElement('div'); row.className='roomBtn'+(state.selectedRoomId===r.id?' active':'');
-      const left=document.createElement('div'); left.className='inline';
-      const rn=document.createElement('input'); rn.value=r.name; rn.oninput=(e)=>{ r.name=e.target.value; renderSummary();};
-      left.appendChild(rn);
-      const tools=document.createElement('div'); tools.className='inline';
-      const c=document.createElement('button'); c.className='btn-sm'; c.textContent='Copy'; c.onclick=(ev)=>{ev.stopPropagation(); copyRoom(f.id,r.id);};
-      const d=document.createElement('button'); d.className='btn-sm'; d.textContent='Del'; d.onclick=(ev)=>{ev.stopPropagation(); deleteRoom(f.id,r.id);};
-      tools.appendChild(c); tools.appendChild(d);
-      row.onclick=()=>selectRoom(f.id,r.id);
-      row.appendChild(left); row.appendChild(tools);
-      rooms.appendChild(row);
-    });
-    const add=document.createElement('button'); add.className='btn-sm'; add.textContent='+ Add Room'; add.onclick=()=>{addRoom(f.id); renderLeft();};
-    card.appendChild(rooms); card.appendChild(add);
-    floorsList.appendChild(card);
-  }); }
-
-  // ===== Tabs =====
-  const systemTabs=document.getElementById('systemTabs');
-  function renderTabs(){ systemTabs.innerHTML=''; SYSTEM_TABS.forEach(t=>{ const el=document.createElement('div'); el.className='tab'+(state.selectedTab===t?' active':''); el.textContent=t; el.onclick=()=>{ state.selectedTab=t; renderTabs(); renderMain(); }; systemTabs.appendChild(el); }); }
-
-  function getSelected(){ const f=state.floors.find(x=>x.id===state.selectedFloorId); if(!f) return{}; const r=f.rooms.find(x=>x.id===state.selectedRoomId); return {f,r}; }
-  function markEquipmentRoom(room){ state.floors.forEach(ff=>ff.rooms.forEach(rr=>rr.isEquipmentRoom=false)); room.isEquipmentRoom=true; }
-
-  // ===== Rendering main content =====
-  const mainContent=document.getElementById('mainContent');
-  function renderMain(){ const {f,r}=getSelected(); mainContent.innerHTML=''; if(!r){ mainContent.innerHTML='<div class="muted">Select a floor & room.</div>'; return; }
-    const header=document.createElement('div'); header.className='systemSummary'; header.innerHTML=`<strong>${escape(f.name)} — ${escape(r.name)}</strong>`; mainContent.appendChild(header);
-
-    const tab=state.selectedTab;
-    if(tab==='Control4') renderControl4(r); else if(tab==='Lighting') renderLighting(r); else if(tab==='Cameras') renderCameras(r); else if(tab==='Security') renderSecurity(r); else if(tab==='Networking') renderNetworking(r); else renderMisc(r,tab);
-  }
-
-  // ===== Color swatch picker =====
-  function swatchRow(current, onPick){ const wrap=document.createElement('div'); wrap.className='swatchRow'; SWATCHES.forEach(s=>{ const b=document.createElement('button'); b.className='swatch'+(current===s.val?' is-selected':''); b.style.background=s.val; b.title=s.name; b.onclick=(e)=>{ e.preventDefault(); onPick(s.val); }; wrap.appendChild(b); }); return wrap; }
-
-  // ===== CONTROL4 =====
-  function renderControl4(r){
-    const box=document.createElement('div');
-    // Summary above
-    const form=document.createElement('div');
-    form.innerHTML = `
-      <div class='row'>
-        <div class='col'>
-          <label>Equipment Room?</label>
-          <select id='eqRoom'><option value='no'>No</option><option value='yes'>Yes</option></select>
-        </div>
-        <div class='col'>
-          <label>Video streams (count)</label>
-          <input id='videoCount' type='number' min='0' value='${Number(r.control4.videoStreams||0)}'>
-        </div>
-        <div class='col'>
-          <label>Audio</label>
-          <select id='audioEnabled'>
-            <option value='no'>None</option>
-            <option value='wired'>Wired</option>
-            <option value='wireless'>Wireless</option>
-          </select>
-        </div>
-        <div class='col'>
-          <label>Speakers</label>
-          <input id='speakerCount' type='number' min='0' value='${Number(r.control4.audio.speakers||0)}'>
-        </div>
-      </div>
-      <div class='row'>
-        <div class='col'><label>Audio distribution</label>
-          <select id='audioDist'>
-            <option>Mono</option><option selected>Stereo</option><option>2.1</option><option>5.1</option><option>7.1</option><option>7.2</option><option>7.2.4</option>
-          </select>
-        </div>
-      </div>
-    `;
-    box.appendChild(form);
-
-    // Keypads section
-    const ksec=document.createElement('div'); ksec.className='systemSummary'; ksec.innerHTML='<strong>Keypads</strong><div id="keypadsList"></div>'; const addK=document.createElement('button'); addK.className='btn-sm'; addK.textContent='+ Add Keypad'; addK.onclick=()=>{ r.control4.keypads.push({type:'Configurable',color:'#FFFFFF',keys:0}); renderMain(); }; ksec.appendChild(addK); box.appendChild(ksec);
-
-    // Touchscreens realtime list with color + delete
-    const tse=document.createElement('div'); tse.className='systemSummary'; tse.innerHTML='<strong>Touchscreens</strong>'; const tsRow=document.createElement('div'); tsRow.className='row';
-    const add7=document.createElement('button'); add7.className='btn-sm'; add7.textContent='+ 7"'; add7.onclick=()=>{ r.control4.touchscreens.push({size:'7"',color:'#FFFFFF'}); renderMain(); };
-    const add10=document.createElement('button'); add10.className='btn-sm'; add10.textContent='+ 10"'; add10.onclick=()=>{ r.control4.touchscreens.push({size:'10"',color:'#FFFFFF'}); renderMain(); };
-    tsRow.appendChild(add7); tsRow.appendChild(add10); tse.appendChild(tsRow);
-    (r.control4.touchscreens||[]).forEach((ts,i)=>{
-      const row=document.createElement('div'); row.className='row';
-      const info=document.createElement('div'); info.className='col'; info.innerHTML=`<label>Touchscreen</label><div class='chip'>${escape(ts.size)}</div>`;
-      const colors=document.createElement('div'); colors.className='col'; colors.appendChild(swatchRow(ts.color,(val)=>{ ts.color=val; }));
-      const del=document.createElement('div'); del.className='fit'; const b=document.createElement('button'); b.className='btn-sm'; b.textContent='Del'; b.onclick=()=>{ r.control4.touchscreens.splice(i,1); renderMain(); }; del.appendChild(b);
-      row.appendChild(info); row.appendChild(colors); row.appendChild(del); tse.appendChild(row);
-    });
-    box.appendChild(tse);
-
-    // Remotes with color swatches
-    const rse=document.createElement('div'); rse.className='systemSummary'; rse.innerHTML='<strong>Remotes</strong>';
-    const addR=document.createElement('button'); addR.className='btn-sm'; addR.textContent='+ Add Remote'; addR.onclick=()=>{ r.control4.remotes.push({model:'C4-HALO',color:'#000000'}); renderMain(); }; rse.appendChild(addR);
-    (r.control4.remotes||[]).forEach((rm,i)=>{
-      const row=document.createElement('div'); row.className='row';
-      const info=document.createElement('div'); info.className='col'; info.innerHTML='<label>Model</label><div class="chip">C4-HALO</div>';
-      const colors=document.createElement('div'); colors.className='col'; colors.appendChild(swatchRow(rm.color,(val)=>{ rm.color=val; }));
-      const del=document.createElement('div'); del.className='fit'; const b=document.createElement('button'); b.className='btn-sm'; b.textContent='Del'; b.onclick=()=>{ r.control4.remotes.splice(i,1); renderMain(); }; del.appendChild(b);
-      row.appendChild(info); row.appendChild(colors); row.appendChild(del); rse.appendChild(row);
-    });
-    box.appendChild(rse);
-
-    // **IMPORTANT**: append to DOM BEFORE querying by id inside this box
-    mainContent.appendChild(box);
-
-    // Save wiring and equipment room logic (now elements exist)
-    const eq=document.getElementById('eqRoom'); if(eq){ eq.value=r.isEquipmentRoom?'yes':'no'; eq.onchange=(e)=>{ if(e.target.value==='yes'){ markEquipmentRoom(r); } else { r.isEquipmentRoom=false; } } }
-    const v=document.getElementById('videoCount'); if(v){ v.oninput=(e)=>r.control4.videoStreams=Number(e.target.value||0); }
-    const a=document.getElementById('audioEnabled'); if(a){ a.value=r.control4.audio.enabled?(r.control4.audio.wired?'wired':'wireless'):'no'; a.onchange=(e)=>{ const val=e.target.value; r.control4.audio.enabled=val!=='no'; r.control4.audio.wired=val==='wired'; }; }
-    const s=document.getElementById('speakerCount'); if(s){ s.oninput=(e)=>r.control4.audio.speakers=Number(e.target.value||0); }
-    const d=document.getElementById('audioDist'); if(d){ d.value=r.control4.audio.distribution||'Stereo'; d.onchange=(e)=>r.control4.audio.distribution=e.target.value; }
-
-    // Keypads render (now safe: container exists in DOM)
-    function renderKeypads(){ const container=document.getElementById('keypadsList'); if(!container) return; container.innerHTML=''; (r.control4.keypads||[]).forEach((k,idx)=>{ const row=document.createElement('div'); row.className='row'; const type=document.createElement('select'); ['Configurable','Dimmer'].forEach(t=>{ const o=document.createElement('option'); o.value=o.text=t; if(k.type===t) o.selected=true; type.appendChild(o); }); type.onchange=(e)=>k.type=e.target.value; const keys=document.createElement('input'); keys.type='number'; keys.min=0; keys.value=k.keys||0; keys.oninput=(e)=>k.keys=Number(e.target.value||0); const color=document.createElement('div'); color.appendChild(swatchRow(k.color||'#FFFFFF',(v)=>k.color=v)); const del=document.createElement('button'); del.className='btn-sm'; del.textContent='Del'; del.onclick=()=>{ r.control4.keypads.splice(idx,1); renderKeypads(); }; const c1=document.createElement('div'); c1.className='col'; c1.appendChild(type); const c2=document.createElement('div'); c2.className='col'; c2.appendChild(keys); const c3=document.createElement('div'); c3.className='col'; c3.appendChild(color); const c4=document.createElement('div'); c4.className='fit'; c4.appendChild(del); row.appendChild(c1); row.appendChild(c2); row.appendChild(c3); row.appendChild(c4); container.appendChild(row); }); }
-    renderKeypads();
-  }
-
-  // ===== LIGHTING (banks -> gangs) =====
-  function renderLighting(r){ const wrap=document.createElement('div');
-    const banks=document.createElement('div'); banks.id='lightingBanksList';
-    const add=document.createElement('button'); add.className='btn-sm'; add.textContent='+ Add Bank'; add.onclick=()=>{ r.lighting.banks.push({id:uid(),name:`Bank ${r.lighting.banks.length+1}`,gangs:[]}); renderMain(); };
-    wrap.appendChild(banks); wrap.appendChild(add);
-    (r.lighting.banks||[]).forEach((bank,bIdx)=>{
-      const card=document.createElement('div'); card.className='systemSummary';
-      const head=document.createElement('div'); head.className='row';
-      const name=document.createElement('input'); name.value=bank.name; name.oninput=(e)=>bank.name=e.target.value; const del=document.createElement('button'); del.className='btn-sm'; del.textContent='Del Bank'; del.onclick=()=>{ r.lighting.banks.splice(bIdx,1); renderMain(); };
-      head.appendChild(name); head.appendChild(del); card.appendChild(head);
-      (bank.gangs||[]).forEach((g,gIdx)=>{
-        const row=document.createElement('div'); row.className='row';
-        const pos=document.createElement('input'); pos.type='number'; pos.min=1; pos.value=g.positions||1; pos.oninput=(e)=>{ g.positions=Number(e.target.value||1); renderSummary(); };
-        const type=document.createElement('select'); ['Switch','Dimmer','Keypad'].forEach(t=>{ const o=document.createElement('option'); o.value=o.text=t; if(g.type===t) o.selected=true; type.appendChild(o); }); type.onchange=(e)=>g.type=e.target.value;
-        const col=document.createElement('div'); col.appendChild(swatchRow(g.color||'#FFFFFF',(v)=>g.color=v));
-        const delG=document.createElement('button'); delG.className='btn-sm'; delG.textContent='Del'; delG.onclick=()=>{ bank.gangs.splice(gIdx,1); renderMain(); };
-        const c1=document.createElement('div'); c1.className='col'; c1.appendChild(pos); const c2=document.createElement('div'); c2.className='col'; c2.appendChild(type); const c3=document.createElement('div'); c3.className='col'; c3.appendChild(col); const c4=document.createElement('div'); c4.className='fit'; c4.appendChild(delG);
-        row.appendChild(c1); row.appendChild(c2); row.appendChild(c3); row.appendChild(c4); card.appendChild(row);
-      });
-      const addGang=document.createElement('button'); addGang.className='btn-sm'; addGang.textContent='+ Gang'; addGang.onclick=()=>{ bank.gangs.push({positions:1,type:'Switch',color:'#FFFFFF'}); renderMain(); };
-      card.appendChild(addGang);
-      banks.appendChild(card);
-    });
-    // Lutron controllers info
-    const counts = countLutronDevices();
-    const note=document.createElement('div'); note.className='muted'; note.style.marginTop='8px'; note.textContent=`Devices: ${counts.devices} → RA3 Controllers needed: ${counts.controllers}`;
-    wrap.appendChild(note);
-    // Keypad dimmer note
-    const hasDimmer=(r.lighting.banks||[]).some(b=> (b.gangs||[]).some(g=>g.type==='Dimmer'));
-    const kd=document.createElement('div'); kd.className='chip'; kd.textContent = hasDimmer? 'Note: keypad dimmers present in this room' : 'Note: no keypad dimmers in this room';
-    wrap.appendChild(kd);
-    mainContent.appendChild(wrap);
-  }
-
-  // ===== CAMERAS =====
-  function renderCameras(r){ const wrap=document.createElement('div'); const list=document.createElement('div'); list.id='camsList';
-    const add=document.createElement('button'); add.className='btn-sm'; add.textContent='+ Add Camera'; add.onclick=()=>{ r.cameras.push({type:'Dome',color:'#FFFFFF',height:'10 ft',focus:'Area'}); renderMain(); };
-    wrap.appendChild(list); wrap.appendChild(add);
-    (r.cameras||[]).forEach((c,idx)=>{ const row=document.createElement('div'); row.className='row';
-      const type=document.createElement('select'); ['Dome','Bullet','Turret','PTZ','Box Camera'].forEach(t=>{ const o=document.createElement('option'); o.value=o.text=t; if(c.type===t) o.selected=true; type.appendChild(o); }); type.onchange=(e)=>{ c.type=e.target.value; renderSummary(); };
-      const col=document.createElement('div'); col.appendChild(swatchRow(c.color||'#FFFFFF',(v)=>c.color=v));
-      const height=document.createElement('select'); ['8 ft','10 ft','12 ft','15 ft','20 ft','25 ft','Custom'].forEach(t=>{ const o=document.createElement('option'); o.value=o.text=t; if(c.height===t) o.selected=true; height.appendChild(o); }); height.onchange=(e)=>c.height=e.target.value;
-      const del=document.createElement('button'); del.className='btn-sm'; del.textContent='Del'; del.onclick=()=>{ r.cameras.splice(idx,1); renderMain(); };
-      const c1=document.createElement('div'); c1.className='col'; c1.appendChild(type); const c2=document.createElement('div'); c2.className='col'; c2.appendChild(col); const c3=document.createElement('div'); c3.className='col'; c3.appendChild(height); const c4=document.createElement('div'); c4.className='fit'; c4.appendChild(del);
-      row.appendChild(c1); row.appendChild(c2); row.appendChild(c3); row.appendChild(c4); list.appendChild(row); });
-
-    // Storage estimate (real time)
-    const camsTotal = totalCameras();
-    const est = estimateStorageTB(camsTotal, state.settings.cameraBitrateMbps, state.settings.cameraRetentionDays);
-    const storage=document.createElement('div'); storage.className='systemSummary'; storage.innerHTML = `<strong>Storage Estimate</strong><div class='muted'>${camsTotal} cams @ ${state.settings.cameraBitrateMbps} Mbps for ${state.settings.cameraRetentionDays} days ≈ <b>${est.toFixed(1)} TB</b></div>`;
-    wrap.appendChild(storage);
-
-    mainContent.appendChild(wrap);
-  }
-
-  // ===== SECURITY =====
-  function renderSecurity(r){ const wrap=document.createElement('div');
-    const zones=document.createElement('div'); zones.id='zonesList';
-    const addZ=document.createElement('button'); addZ.className='btn-sm'; addZ.textContent='+ Add Sensor'; addZ.onclick=()=>{ r.security.zones.push({type:'Qolsys-DW-Mini',count:1}); renderMain(); };
-    wrap.appendChild(zones); wrap.appendChild(addZ);
-    (r.security.zones||[]).forEach((z,idx)=>{ const row=document.createElement('div'); row.className='row';
-      const sel=document.createElement('select'); ['Qolsys-DW-Mini','IQ-Motion-S','IQ-Glass-S','IQ-Carbon','DSC-PG9936'].forEach(t=>{ const o=document.createElement('option'); o.value=o.text=t; if(z.type===t) o.selected=true; sel.appendChild(o); }); sel.onchange=(e)=>z.type=e.target.value;
-      const count=document.createElement('input'); count.type='number'; count.min=1; count.value=z.count||1; count.oninput=(e)=>z.count=Number(e.target.value||1);
-      const del=document.createElement('button'); del.className='btn-sm'; del.textContent='Del'; del.onclick=()=>{ r.security.zones.splice(idx,1); renderMain(); };
-      const c1=document.createElement('div'); c1.className='col'; c1.appendChild(sel); const c2=document.createElement('div'); c2.className='col'; c2.appendChild(count); const c3=document.createElement('div'); c3.className='fit'; c3.appendChild(del);
-      row.appendChild(c1); row.appendChild(c2); row.appendChild(c3); zones.appendChild(row);
-    });
-
-    // Panel controls
-    const panel=document.createElement('div'); panel.className='systemSummary';
-    panel.innerHTML = `<label><input type='checkbox' id='panelPresent'> This room gets a panel</label> <select id='panelType' class='inline'><option value='remote'>Remote</option><option value='main'>Main</option></select>`;
-    wrap.appendChild(panel);
-    mainContent.appendChild(wrap);
-
-    // Bind panel
-    const panelPresent=document.getElementById('panelPresent'); const panelType=document.getElementById('panelType');
-    panelPresent.checked=!!r.security.panel.present; panelType.value=r.security.panel.type||'remote';
-    panelPresent.onchange=()=>{ r.security.panel.present=panelPresent.checked; };
-    panelType.onchange=()=>{
-      if(panelType.value==='main' && r.security.panel.present){
-        // one main only
-        const ex = state.floors.flatMap(f=>f.rooms).find(x=>x.security && x.security.panel && x.security.panel.present && x.security.panel.type==='main');
-        if(ex && ex!==r && !confirm('A main panel exists. Replace with this room?')){ panelType.value='remote'; return; }
-        state.floors.forEach(f=>f.rooms.forEach(rr=>{ if(rr.security && rr.security.panel){ rr.security.panel.type='remote'; } }));
-        r.security.panel.type='main';
-      } else {
-        r.security.panel.type=panelType.value;
-      }
-    };
-  }
-
-  // ===== NETWORKING =====
-  function renderNetworking(r){ const wrap=document.createElement('div');
-    const list=document.createElement('div'); list.id='networkBanksList';
-    const add=document.createElement('button'); add.className='btn-sm'; add.textContent='+ Add Bank'; add.onclick=()=>{ r.networking.banks.push({id:uid(),name:`Panel ${r.networking.banks.length+1}`,jacks:0}); renderMain(); };
-    wrap.appendChild(list); wrap.appendChild(add);
-    (r.networking.banks||[]).forEach((bank,idx)=>{ const card=document.createElement('div'); card.className='systemSummary';
-      const head=document.createElement('div'); head.className='row'; const name=document.createElement('input'); name.value=bank.name; name.oninput=(e)=>bank.name=e.target.value; const del=document.createElement('button'); del.className='btn-sm'; del.textContent='Del Bank'; del.onclick=()=>{ r.networking.banks.splice(idx,1); renderMain(); };
-      head.appendChild(name); head.appendChild(del); card.appendChild(head);
-      const row=document.createElement('div'); row.className='row'; const j=document.createElement('input'); j.type='number'; j.min=0; j.value=bank.jacks||0; j.oninput=(e)=>{ bank.jacks=Number(e.target.value||0); renderSummary(); };
-      const poe=document.createElement('div'); poe.className='col muted'; poe.innerHTML=`PoE (auto): ${autoPoECount()}`;
-      row.appendChild(j); row.appendChild(poe); card.appendChild(row); list.appendChild(card);
-    });
-    mainContent.appendChild(wrap);
-  }
-
-  function renderMisc(r,tab){ const wrap=document.createElement('div'); const ta=document.createElement('textarea'); ta.placeholder=`Notes for ${tab}`; ta.value=r[tab.toLowerCase()]||''; ta.oninput=(e)=>r[tab.toLowerCase()]=e.target.value; wrap.appendChild(ta); mainContent.appendChild(wrap); }
-
-  // ===== Summary & Calculations =====
-  const summaryArea=document.getElementById('summaryArea');
-  function renderSummary(){ const totals={cams:0,keypads:0,touch:0,jacks:0,loads:0,poe:0};
-    state.floors.forEach(f=>f.rooms.forEach(r=>{
-      totals.cams += (r.cameras||[]).length;
-      totals.keypads += (r.control4.keypads||[]).length;
-      totals.touch += (r.control4.touchscreens||[]).length;
-      (r.lighting.banks||[]).forEach(b=> (b.gangs||[]).forEach(g=> totals.loads += Number(g.positions||0)));
-      (r.networking.banks||[]).forEach(b=> totals.jacks += Number(b.jacks||0));
-    }));
-    totals.poe = autoPoECount();
-    const estTB = estimateStorageTB(totals.cams, state.settings.cameraBitrateMbps, state.settings.cameraRetentionDays);
-
-    summaryArea.innerHTML = `
-      <div class='chip'>Cameras: ${totals.cams}</div>
-      <div class='chip'>Touchscreens: ${totals.touch}</div>
-      <div class='chip'>Keypads: ${totals.keypads}</div>
-      <div class='chip'>Jacks: ${totals.jacks}</div>
-      <div class='chip'>Lighting Loads: ${totals.loads}</div>
-      <div class='chip'>PoE: ${totals.poe}</div>
-      <div class='chip'>Storage ≈ ${estTB.toFixed(1)} TB</div>
-    `;
-  }
-
-  function autoPoECount(){ let c=0; state.floors.forEach(f=>f.rooms.forEach(r=>{ c += (r.cameras||[]).length; c += (r.control4.touchscreens||[]).length; })); return c; }
-  function totalCameras(){ return state.floors.reduce((a,f)=>a+f.rooms.reduce((aa,r)=>aa+(r.cameras||[]).length,0),0); }
-  function estimateStorageTB(nCams, mbps, days){ const bitsPerSec = mbps*1_000_000; const totalBits = nCams*bitsPerSec*days*24*3600; const bytes = totalBits/8; const TB = bytes/1e12; return TB; }
-
-  // ===== Lutron controllers (≤2, 100 devices each) =====
-  function countLutronDevices(){ let devices=0; state.floors.forEach(f=>f.rooms.forEach(r=> (r.lighting.banks||[]).forEach(b=> (b.gangs||[]).forEach(g=> devices += Number(g.positions||0))))); const controllers=Math.min(2, Math.max(1, Math.ceil(devices/100)||0)); return {devices,controllers}; }
-
-  // ===== NVR selection logic (cost-first) =====
-  function nvrPlan(){ const n=totalCameras(); const plan=[]; if(n<=0) return plan; let remaining=n; // prefer 32, then 16, then 8; use 8 then upgrade to 16 if >40
-    if(remaining>=32){ plan.push({channels:32, model:'LUMA-NVR-32'}); remaining-=32; }
-    if(remaining>0 && remaining<=8){ plan.push({channels:8, model:'LUMA-NVR-8'}); remaining-=8; }
-    else if(remaining>0 && remaining<=16){ plan.push({channels:16, model:'LUMA-NVR-16'}); remaining-=16; }
-    else if(remaining>16 && remaining<=24){ plan.push({channels:16, model:'LUMA-NVR-16'}); remaining-=16; plan.push({channels:8, model:'LUMA-NVR-8'}); remaining-=8; }
-    else if(remaining>24 && remaining<=32){ plan.push({channels:32, model:'LUMA-NVR-32'}); remaining-=32; }
-    if(n>32 && n<=40){ // upgrade 8 to 16
-      const i=plan.findIndex(p=>p.channels===8); if(i>=0){ plan.splice(i,1,{channels:16,model:'LUMA-NVR-16'}); }
-    }
-    return plan;
-  }
-
-  // ===== Rack sizing (Strong SR-WMS-6U..24U) =====
-  function computeRacks(){
-    // Rough RU: WattBox 2U (always), Switch 1U each, NVR 2U each, Triad amp 1U each, shelves 1U if controllers/smalls, vent 2U, reserve UPS 2U
-    // Group by system first, then spill into additional racks if >24U
-    const plan=[];
-    const equipRoom = state.floors.flatMap(f=>f.rooms.map(r=>({f,r}))).find(x=>x.r.isEquipmentRoom) || {f:state.floors[0],r:state.floors[0]?state.floors[0].rooms[0]:null};
-    if(!equipRoom || !equipRoom.r) return [];
-
-    // Gather equipment counts
-    const cams=totalCameras();
-    const nvrs=nvrPlan();
-    const jacks=state.floors.reduce((a,f)=>a+f.rooms.reduce((aa,r)=>aa+(r.networking.banks||[]).reduce((s,b)=>s+Number(b.jacks||0),0),0),0);
-    const poe=autoPoECount();
-    // Ports needed ~ jacks + PoE (already counted in jacks physically but keep spare)
-    const portsNeeded=Math.ceil(jacks*(1+state.settings.sparePercent/100));
-    const switches = portsNeeded>24? [{model:'ARAKNIS-420-48P',ru:1}] : portsNeeded>8? [{model:'ARAKNIS-420-24P',ru:1}] : portsNeeded>0? [{model:'ARAKNIS-420-8P',ru:1}] : [];
-
-    // Controllers/smalls -> shelf
-    let smalls=0; state.floors.forEach(f=>f.rooms.forEach(r=>{ if(r.control4 && (r.control4.videoStreams>0 || (r.control4.audio&&r.control4.audio.enabled))){ smalls+=1; } }));
-    const shelves = smalls>0 ? [{model:'STRONG-1U-SHELF',ru:1}] : [];
-
-    // Base fixed items
-    const fixed=[{model:'WattBox WB-700CH',ru:2}];
-    const vents=[{model:'VENT-1U',ru:1},{model:'VENT-1U',ru:1}];
-    const reserve=[{model:'UPS-RESERVED',ru:2}];
-
-    const parts=[...fixed,...switches,...nvrs.map(n=>({model:n.model,ru:2})),...shelves,...vents,...reserve];
-
-    // Pack into racks up to 24U each
-    let current={ru:0,items:[]};
-    function finalizeCurrent(){ if(current.items.length){ plan.push(current); } current={ru:0,items:[]}; }
-    function addItem(it){ if(current.ru+it.ru>24){ finalizeCurrent(); } current.items.push(it); current.ru+=it.ru; }
-
-    parts.forEach(addItem); finalizeCurrent();
-
-    // Map to Strong sizes: choose smallest rack that fits (6/12/18/24)
-    plan.forEach(rk=>{ const need=rk.ru; rk.size = need<=6?6:need<=12?12:need<=18?18:24; rk.model = `SR-WMS-${rk.size}U`; });
-    return plan;
-  }
-
-  // ===== EXPORT CSV =====
-  function exportCSV(){ const rows=[]; // Order: Quantity | Model | Location | Manufacturer | System | Custom Field 12
-    state.floors.forEach(f=>f.rooms.forEach(r=>{
-      const loc=`${f.name}: ${r.name}`;
-      // Control4 core logic
-      if(r.control4 && r.control4.videoStreams>0){ rows.push(row(1,'C4-CORE1',loc,'Control4',SYSTEM_TO_EXPORT['Control4'],'Video controller for stream')); }
-      if(r.control4 && r.control4.audio && r.control4.audio.enabled && r.control4.audio.wired && r.control4.audio.speakers>0){ rows.push(row(1,'TRIAD-AMP-1U',loc,'TRIAD','Control Systems','Wired audio amp')); }
-      (r.control4.keypads||[]).forEach(k=>{ const sku=(k.type==='Dimmer')?'C4-KD120-WH':'C4-KC120277-WH'; rows.push(row(1,sku,loc,'Control4','Control Systems',`keys:${k.keys||0}; color:${k.color||''}`)); });
-      (r.control4.touchscreens||[]).forEach(ts=>{ const sku=(ts.size==='7"')?'C4-TSWMC07':'C4-TSWMC10'; rows.push(row(1,sku,loc,'Control4','Control Systems',`size:${ts.size}; color:${ts.color||''}`)); });
-      (r.control4.remotes||[]).forEach(rm=> rows.push(row(1,'C4-HALO',loc,'Control4','Control Systems',`color:${rm.color||''}`)));
-
-      // Lighting
-      (r.lighting.banks||[]).forEach(b=> (b.gangs||[]).forEach(g=>{ let model=(g.type==='Dimmer')?'RRST-PRO-N-XX':(g.type==='Switch'?'RRST-8ANS-XX':'RRST-W4B-XX'); model=model.replace('XX','WH'); rows.push(row(Number(g.positions||1),model,loc,'Lutron','Lighting',`bank:${b.name}; positions:${g.positions}`)); }));
-
-      // Cameras
-      (r.cameras||[]).forEach(c=> rows.push(row(1,'LUMA-CAM-STD',loc,'Luma','Surveillance',`${c.type}; ${c.height}`)));
-
-      // Security
-      (r.security.zones||[]).forEach(z=> rows.push(row(Number(z.count||1),z.type,loc,'Qolsys/DSC','Security Systems','')));
-      if(r.security.panel && r.security.panel.present){ rows.push(row(1, r.security.panel.type==='main'?'IQ4-MAIN':'IQ4-REMOTE',loc,'Qolsys','Security Systems',`panel:${r.security.panel.type}`)); }
-
-      // Networking
-      (r.networking.banks||[]).forEach(b=> rows.push(row(Number(b.jacks||0),'Cat6-150',loc,'Generic','Networking',`bank:${b.name}; jacks:${b.jacks}; poe:${autoPoECount()}`)));
-    }));
-
-    // Equipment room aggregates
-    const equip = state.floors.flatMap(f=>f.rooms.map(r=>({f, r}))).find(x=>x.r.isEquipmentRoom) || (state.floors[0]?{f:state.floors[0], r:state.floors[0].rooms[0]}:null);
-    const equipLoc = equip? `${equip.f.name}: ${equip.r.name}` : 'Equipment Room';
-
-    // NVRs
-    nvrPlan().forEach(n=> rows.push(row(1,n.model,equipLoc,'Luma','Surveillance',`${n.channels} channels`)));
-
-    // Switches
-    const jacksTotal = state.floors.reduce((a,f)=>a+f.rooms.reduce((aa,r)=>aa+(r.networking.banks||[]).reduce((s,b)=>s+Number(b.jacks||0),0),0),0);
-    const portsNeeded = Math.ceil(jacksTotal*(1+state.settings.sparePercent/100));
-    if(portsNeeded>0){ let sw='ARAKNIS-420-8P'; if(portsNeeded>24) sw='ARAKNIS-420-48P'; else if(portsNeeded>8) sw='ARAKNIS-420-24P'; rows.push(row(1,sw,equipLoc,'Araknis','Networking',`${portsNeeded} ports incl ${state.settings.sparePercent}% spares`)); }
-
-    // WattBox always
-    rows.push(row(1,'WB-700CH',equipLoc,'WattBox','Networking','Power conditioner (2RU)'));
-
-    // Racks (auto)
-    computeRacks().forEach((rk,i)=> rows.push(row(1,rk.model,equipLoc,'Strong','Networking',`Rack ${i+1}: ${rk.ru} RU used; contents:${rk.items.map(it=>it.model).join(' | ')}`)));
-
-    // CSV output
-    const out=[CSV_HEADERS]; rows.forEach(it=> out.push(CSV_HEADERS.map(h=> csvCell(it[h]))));
-    const csv=out.map(r=>r.join(',')).join('\n');
-    const fname = exportFilename();
-    downloadFile(csv, fname, 'text/csv');
-    alert('CSV generated: '+fname);
-  }
-
-  function row(q,model,location,manufacturer,system,cf12){ return { 'Quantity':q,'Model':model,'Location':location,'Manufacturer':manufacturer,'System':system,'Custom Field 12':cf12||''}; }
-
-  function exportFilename(){
-    const today=new Date(); const y=today.getFullYear(); const m=String(today.getMonth()+1).padStart(2,'0'); const d=String(today.getDate()).padStart(2,'0');
-    const cn=(state.client.name||'Client').trim();
-    let pn=(state.projectName||'').trim(); if(!pn) pn = cn+" Project"; // auto from client
-    return `${cn} - ${pn} - ${y}-${m}-${d}.csv`.replace(/\s+/g,' ');
-  }
-
-  function downloadFile(content,filename,mime){ const blob=new Blob([content],{type:mime}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-
-  // ===== Bind Header Buttons =====
-  document.getElementById('exportBtn').onclick=exportCSV;
-  document.getElementById('downloadJson').onclick=()=>{ const out=JSON.stringify(state,null,2); downloadFile(out,(exportFilename().replace('.csv','.json')),'application/json'); };
-  document.getElementById('clearProject').onclick=()=>{ if(confirm('Clear project?')){ state={client:{name:'',phone:'',email:'',address:''},projectName:'',floors:[],selectedFloorId:null,selectedRoomId:null,selectedTab:'Control4',settings:state.settings,racks:[]}; renderLeft(); renderTabs(); renderMain(); renderSummary(); }};
-  document.getElementById('addFloorBtn').onclick=()=>addFloor();
-  document.getElementById('seedBtn').onclick=seedSample;
-
-  // ===== Client inputs =====
-  const cName=el('#clientName'), cPhone=el('#clientPhone'), cEmail=el('#clientEmail'), cAddr=el('#clientAddress'), pName=el('#projectName');
-  [cName,cPhone,cEmail,cAddr,pName].forEach(inp=> inp.addEventListener('input',()=>{
-    state.client.name=cName.value; state.client.phone=cPhone.value; state.client.email=cEmail.value; state.client.address=cAddr.value; state.projectName=pName.value; }));
-
-  // ===== Seed sample =====
-  function seedSample(){ state.floors=[]; addFloor('Main Floor'); const f=state.floors[0]; f.rooms[0].name='Living Room'; f.rooms[0].control4.videoStreams=1; f.rooms[0].control4.audio.enabled=true; f.rooms[0].control4.audio.wired=true; f.rooms[0].lighting.banks.push({id:uid(),name:'Bank 1',gangs:[{positions:2,type:'Dimmer',color:'#FFFFFF'}]}); f.rooms[0].networking.banks.push({id:uid(),name:'Patch 1',jacks:4}); f.rooms[0].cameras.push({type:'Dome',color:'#FFFFFF',height:'10 ft',focus:'Area'}); addRoom(f.id,'Kitchen'); const f2id=uid(); state.floors.push({id:f2id,name:'Upstairs',rooms:[]}); addRoom(f2id,'Bedroom'); state.floors[0].rooms[0].isEquipmentRoom=true; renderLeft(); renderTabs(); renderMain(); renderSummary(); }
-
-  // ===== Init =====
-  function init(){ renderTabs(); if(state.floors.length===0) addFloor('Floor 1'); renderLeft(); renderMain(); renderSummary(); runSelfTests(); }
-
-  // ===== Minimal self-tests (non-intrusive; console only) =====
-  function runSelfTests(){
-    try {
-      console.assert(document.getElementById('floorsList'), 'floorsList should exist');
-      console.assert(state.floors.length>0 && state.floors[0].rooms.length>0, 'should seed 1 floor/room on first run');
-      // force Control4 render and verify key elements are present
-      state.selectedTab='Control4'; renderMain();
-      console.assert(document.getElementById('eqRoom'), 'eqRoom select should be in DOM after Control4 render');
-      // add a keypad and ensure keypadsList exists and populates
-      const {r} = getSelected(); r.control4.keypads.push({type:'Configurable',color:'#FFFFFF',keys:2}); renderMain();
-      console.assert(document.getElementById('keypadsList'), 'keypadsList should exist');
-      // clean up
-      r.control4.keypads = [];
-      renderMain();
-      console.log('%cSelf-tests passed','color:lime');
-    } catch(e){
-      console.warn('Self-test failed:', e);
-    }
-  }
-
-  init();
-  </script>
+  <!-- App logic -->
+  <script src="app.min.js"></script>
 </body>
 </html>
