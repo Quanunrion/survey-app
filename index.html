@@ -88,6 +88,21 @@
   </div>
 
   <!-- App logic -->
-  <script src="app.min.js"></script>
+  <!-- Core & utils -->
+<script src="js/core.js"></script>
+
+<!-- Tabs (must come after core, before init) -->
+<script src="js/tabs/control4.js"></script>
+<script src="js/tabs/lighting.js"></script>
+<script src="js/tabs/cameras.js"></script>
+<script src="js/tabs/security.js"></script>
+<script src="js/tabs/wiring.js"></script>
+
+<!-- Initialize (after all tabs are loaded) -->
+<script>
+  // Keep your previous init() call
+  init();
+</script>
+
 </body>
 </html>
