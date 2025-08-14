@@ -100,8 +100,10 @@
 
 <!-- Initialize (after all tabs are loaded) -->
 <script>
-  // Keep your previous init() call
-  init();
+  // Ensure DOM and all scripts are loaded
+  window.addEventListener('DOMContentLoaded', function(){
+    if (typeof init === 'function') init();
+  });
 </script>
 
 </body>
