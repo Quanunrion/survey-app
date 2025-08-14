@@ -83,3 +83,6 @@ option{background:#fff;color:#0B1726}
 .sw-net-gn{background:linear-gradient(135deg,#5DAF74,#166534)}
 .sw-net-rd{background:linear-gradient(135deg,#E06666,#991B1B)}
 .sw-net-bl{background:linear-gradient(135deg,#1E1E1E,#000)}
+/* code under swatch rows */
+.swatchCode{font-size:11px;color:var(--muted);margin-top:4px}
+
