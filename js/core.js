@@ -19,7 +19,7 @@ window.NVR_TB_PER_UNIT=2;
 
 window.uid=()=>Math.random().toString(36).slice(2,9);
 window.el=s=>document.querySelector(s);
-window.escapeHTML=v=>v==null?"":String(v).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]}));
+window.escapeHTML = v => v == null ? "" : String(v).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 window.csvCell=v=>{if(v==null)return"";const s=String(v).replace(/"/g,'""');return /[",\n]/.test(s)?`"${s}"`:s};
 window.downloadFile=(content,filename,mime)=>{const b=new Blob([content],{type:mime});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);};
 
