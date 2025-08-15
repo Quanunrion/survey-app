@@ -431,60 +431,135 @@ window.exportFilename = function(){
   return `${cn} - ${pn} - ${y}-${m}-${d}.csv`.replace(/\s+/g, " ");
 };
 
-/* Strong wall-mount racks packer (SR-WMS-6U..24U); split if >24U */
+/* Strong wall-mount racks packer (SR-WMS-6U..24U); per-rack base:
+   - WattBox WB-700CH (2U)
+   - UPS-RESERVED (2U)
+   - Vents: 1U top + 1U bottom + 1U every 10U of payload
+   Payload = switches (1U ea), NVRs (2U ea), shelves (1U ea)
+*/
 window.computeRacks = function(){
-  const plan = [];
   const equip = state.floors.flatMap(f => f.rooms.map(r => ({ f, r })))
                 .find(x => x.r.isEquipmentRoom) ||
                 (state.floors[0] ? { f: state.floors[0], r: state.floors[0].rooms[0] } : null);
   if (!equip || !equip.r) return [];
 
-  // Ports & switch plan
+  // Build payload list (everything that varies with project scale)
   const portsNeeded = computePortsNeeded();
-  const switchPlan = portsNeeded > 0 ? planSwitches(portsNeeded) : [];
+  const switchPlan  = portsNeeded > 0 ? planSwitches(portsNeeded) : [];
+  const nvrs        = nvrPlan().map(n => ({ model: n.model, ru: 2 }));
 
-  // Controllers/smalls -> shelf
   let smalls = 0;
   state.floors.forEach(f => f.rooms.forEach(r => {
     if (r.control4 && (r.control4.videoStreams > 0 || (r.control4.audio && r.control4.audio.enabled))) smalls++;
   }));
   const shelves = smalls > 0 ? [{ model: "STRONG-1U-SHELF", ru: 1 }] : [];
 
-  // Base fixed items
-  const fixed   = [{ model: "WattBox WB-700CH", ru: 2 }];
-  const vents   = [{ model: "VENT-1U", ru: 1 }, { model: "VENT-1U", ru: 1 }];
-  const reserve = [{ model: "UPS-RESERVED", ru: 2 }];
-
-  const parts = [
-    ...fixed,
-    ...switchPlan.map(s => ({ model: s.model, ru: 1 })),     // all switches
-    ...nvrPlan().map(n => ({ model: n.model, ru: 2 })),      // NVRs
-    ...shelves,
-    ...vents,
-    ...reserve
+  const payload = [
+    ...switchPlan.map(s => ({ model: s.model, ru: 1 })),
+    ...nvrs,
+    ...shelves
   ];
 
-  // Pack items into ≤24U racks
-  let current = { ru: 0, items: [] };
-  function finalize(){ if (current.items.length) plan.push(current); current = { ru: 0, items: [] }; }
-  function add(it){ if (current.ru + it.ru > 24) finalize(); current.items.push(it); current.ru += it.ru; }
-  parts.forEach(add); finalize();
+  // Helper: choose Strong rack size for total RU used
+  const chooseSize = (usedRU) => usedRU <= 6 ? 6 : usedRU <= 12 ? 12 : usedRU <= 18 ? 18 : 24;
 
-  // Map to Strong sizes
-  plan.forEach(rk => {
-    const need = rk.ru;
-    rk.size  = need <= 6 ? 6 : need <= 12 ? 12 : need <= 18 ? 18 : 24;
-    rk.model = `SR-WMS-${rk.size}U`;
-  });
-  return plan;
+  // Pack payload items across racks, each rack reserves room for base items + vents
+  const racks = [];
+  let i = 0;
+  while (i < payload.length) {
+    // Start a fresh rack
+    const items = [];
+    let payloadRU = 0;
+
+    // Base items that exist in every rack (we’ll add them to items after packing payload):
+    // - WattBox 2U
+    // - UPS-RESERVED 2U
+    // - Top & bottom vents 1U + 1U
+    // - Mid-vents 1U for each 10U of payload we actually pack
+    const BASE_RU_FIXED = 2 /*WB*/ + 2 /*UPS*/ + 1 /*top vent*/ + 1 /*bottom vent*/;
+
+    // We’ll tentatively pack payload up to the max rack (24U) minus fixed base;
+    // then account for mid-vents (1U per 10U payload) and shrink if needed.
+    const MAX_RACK_RU = 24;
+
+    // First pass: fill payload while leaving at least fixed base in the worst case
+    let remainingRU = MAX_RACK_RU - BASE_RU_FIXED;
+
+    while (i < payload.length) {
+      const next = payload[i];
+      if (next.ru > remainingRU) break;
+      items.push(next);
+      payloadRU += next.ru;
+      remainingRU -= next.ru;
+
+      // Check if we just crossed another 10U bucket of payload; if so, reserve 1U mid-vent
+      const midVentsNeeded = Math.floor(payloadRU / 10); // 0 at <10U, 1 at 10–19U, 2 at 20–24U ...
+      const midVentsRU     = midVentsNeeded * 1;
+      const totalRackRUIfFixed = BASE_RU_FIXED + payloadRU + midVentsRU;
+
+      if (totalRackRUIfFixed > MAX_RACK_RU) {
+        // Adding this item would force an extra mid-vent we can't fit—undo it.
+        items.pop();
+        payloadRU -= next.ru;
+        remainingRU += next.ru;
+        break;
+      }
+      i++;
+    }
+
+    // Now compute actual mid-vents for the packed payload
+    const midVentsNeeded = Math.floor(payloadRU / 10);
+    const midVents = Array.from({ length: midVentsNeeded }, () => ({ model: "VENT-1U", ru: 1 }));
+
+    // Build final rack item list (order for readability: WattBox, payload with interspersed vents, UPS, bottom vent)
+    const rackItems = [];
+
+    // Top vent
+    rackItems.push({ model: "VENT-1U", ru: 1 });
+
+    // WattBox (per rack)
+    rackItems.push({ model: "WattBox WB-700CH", ru: 2 });
+
+    // Interleave payload with mid-vents roughly every 10U of payload
+    let ruSinceLastVent = 0;
+    items.forEach((it) => {
+      rackItems.push(it);
+      ruSinceLastVent += it.ru;
+      if (ruSinceLastVent >= 10 && midVents.length) {
+        rackItems.push(midVents.shift());
+        ruSinceLastVent = 0;
+      }
+    });
+
+    // UPS-RESERVED
+    rackItems.push({ model: "UPS-RESERVED", ru: 2 });
+
+    // Bottom vent
+    rackItems.push({ model: "VENT-1U", ru: 1 });
+
+    // Compute total RU and choose smallest rack size that fits
+    const usedRU = rackItems.reduce((sum, x) => sum + x.ru, 0);
+    const size   = chooseSize(usedRU);
+    const model  = `SR-WMS-${size}U`;
+
+    racks.push({
+      ru: usedRU,
+      size,
+      model,
+      items: rackItems
+    });
+  }
+
+  return racks;
 };
+
 
 window.exportCSV = function(){
   const rows = [];
   const logCounts = {control4:0, lighting:0, cameras:0, security:0, wiring:0, equip:0};
 
   try {
-    state.floors.forEach(f => (f.rooms || []).forEach(r => {
+    (state.floors || []).forEach(f => (f.rooms || []).forEach(r => {
       const loc = `${f.name}: ${r.name}`;
 
       /* ===== CONTROL4 ===== */
@@ -542,7 +617,7 @@ window.exportCSV = function(){
           const color = c.color || "W";
           switch (c.type) {
             case "Bullet": model = `LUM-820-IP-BMH${color}`; break;
-            case "Turret": model = "LUM-820-IP-TMHC"; break; // fixed (no suffix)
+            case "Turret": model = "LUM-820-IP-TMHC"; break; // fixed
             case "PTZ":    model = "LUM-420-IP-PTZ-4X"; break;
             default:       model = `LUM-820-IP-DF${color}`; // Dome
           }
@@ -601,13 +676,16 @@ window.exportCSV = function(){
       const loc = `${equip.f.name}: ${equip.r.name}`;
 
       // NVRs
-      nvrPlan().forEach(n => { rows.push(row(1, n.model, loc, "Luma", "Surveillance", `${n.channels} channels`)); logCounts.equip++; });
+      nvrPlan().forEach(n => {
+        rows.push(row(1, n.model, loc, "Luma", "Surveillance", `${n.channels} channels`));
+        logCounts.equip++;
+      });
 
-      // Switches (multiple models/quantities as needed)
+      // Switches: multiple models/quantities as needed
       const portsNeeded = computePortsNeeded();
       if (portsNeeded > 0) {
-        const plan = planSwitches(portsNeeded);
-        const grouped = plan.reduce((m, s) => { m[s.model] = (m[s.model] || 0) + 1; return m; }, {});
+        const swPlan = planSwitches(portsNeeded);
+        const grouped = swPlan.reduce((m, s) => { m[s.model] = (m[s.model] || 0) + 1; return m; }, {});
         Object.entries(grouped).forEach(([model, qty]) => {
           rows.push(row(qty, model, loc, "Araknis", "Networking",
             `${portsNeeded} ports incl ${state.settings.sparePercent}% spares`));
@@ -615,13 +693,29 @@ window.exportCSV = function(){
         });
       }
 
-      // WattBox
-      rows.push(row(1, "WB-700CH", loc, "WattBox", "Networking", "Power conditioner (2RU)")); logCounts.equip++;
+      // Racks (auto) + WattBox per rack
+      const racks = computeRacks();
+      racks.forEach((rk, i) => {
+        // Rack line
+        rows.push(row(
+          1,
+          rk.model,
+          loc,
+          "Strong",
+          "Networking",
+          `Rack ${i+1}: ${rk.ru} RU used; contents:${rk.items.map(it=>it.model).join(" | ")}`
+        ));
+        logCounts.equip++;
 
-      // Racks (auto)
-      computeRacks().forEach((rk,i)=> {
-        rows.push(row(1, rk.model, loc, "Strong", "Networking",
-          `Rack ${i+1}: ${rk.ru} RU used; contents:${rk.items.map(it=>it.model).join(" | ")}`));
+        // WattBox per rack (power conditioner 2RU)
+        rows.push(row(
+          1,
+          "WB-700CH",
+          loc,
+          "WattBox",
+          "Networking",
+          `Rack ${i+1}: Power conditioner (2RU)`
+        ));
         logCounts.equip++;
       });
     }
@@ -636,6 +730,7 @@ window.exportCSV = function(){
   console.log("Export summary:", logCounts);
   alert("CSV generated.");
 };
+
 
 /* ====== Seed sample & Init ====== */
 window.seedSample = function(){
