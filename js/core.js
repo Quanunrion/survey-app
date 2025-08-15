@@ -94,7 +94,7 @@ window.CAMERA_COLOR = [
   {name:"Black", code:"B", cls:"sw-cam-b"}
 ];
 
-/* Swatch row helper: shows chips + code under */
+/* Swatch row helper: shows chips + code under, updates live */
 window.buildSwatchRow = (list, current, onPick) => {
   const wrap = document.createElement("div");
   wrap.className = "swatchRow";
@@ -342,6 +342,36 @@ window.nvrPlan = function(){
   return plan;
 };
 
+/* ===== Switch planning (Araknis 420 series, rear ports) =====
+   Input: portsNeeded (already includes spares)
+   Strategy: largest-first (48P → 24P → 8P), minimize count while covering required ports */
+window.planSwitches = function planSwitches(portsNeeded){
+  const out = [];
+  let remaining = Math.max(0, Math.ceil(portsNeeded));
+  const add = (model, ports) => { out.push({ model, ports, ru: 1 }); remaining -= ports; };
+
+  while (remaining > 0) {
+    if (remaining > 24) {
+      add("ARAKNIS-420-48P", 48);
+    } else if (remaining > 8) {
+      add("ARAKNIS-420-24P", 24);
+    } else {
+      add("ARAKNIS-420-8P", 8);
+    }
+  }
+  return out;
+};
+/* Convenience: total ports incl spares across the project */
+window.computePortsNeeded = function computePortsNeeded(){
+  const jacksTotal = (state.floors || []).reduce((a, f) =>
+    a + (f.rooms || []).reduce((aa, r) =>
+      aa + ((r.networking && Array.isArray(r.networking.banks))
+        ? r.networking.banks.reduce((s, b) => s + Number(b.jacks || 0), 0) : 0)
+    , 0)
+  , 0);
+  return Math.ceil(jacksTotal * (1 + state.settings.sparePercent / 100));
+};
+
 /* ====== Summary (right pane) ====== */
 window.renderSummary = function(){
   const summaryArea = document.getElementById("summaryArea");
@@ -366,6 +396,12 @@ window.renderSummary = function(){
     ? ((totalTB * 1e12 * 8) / (camsTotal * perCamMbps * 1e6 * 24 * 3600))
     : 0;
 
+  // switch summary (grouped)
+  const portsNeeded = computePortsNeeded();
+  const swPlan = portsNeeded > 0 ? planSwitches(portsNeeded) : [];
+  const grouped = swPlan.reduce((m, s) => { m[s.model] = (m[s.model] || 0) + 1; return m; }, {});
+  const swText = Object.entries(grouped).map(([m,q]) => `${q}×${m.split('-').pop()}`).join(" + ") || "0";
+
   summaryArea.innerHTML =
     `<div class='chip'>Cameras: ${totals.cams}</div>` +
     `<div class='chip'>Touchscreens: ${totals.touch}</div>` +
@@ -373,7 +409,8 @@ window.renderSummary = function(){
     `<div class='chip'>Jacks: ${totals.jacks}</div>` +
     `<div class='chip'>Lighting Loads: ${totals.loads}</div>` +
     `<div class='chip'>PoE: ${totals.poe}</div>` +
-    `<div class='chip'>Cap: ${totalTB} TB; Retention≈ ${days.toFixed(1)}d</div>`;
+    `<div class='chip'>Cap: ${totalTB} TB; Retention≈ ${days.toFixed(1)}d</div>` +
+    `<div class='chip'>Switches: ${swText}</div>`;
 };
 
 /* ====== Export helpers & CSV ====== */
@@ -402,43 +439,38 @@ window.computeRacks = function(){
                 (state.floors[0] ? { f: state.floors[0], r: state.floors[0].rooms[0] } : null);
   if (!equip || !equip.r) return [];
 
-  const jacks = state.floors.reduce((a, f) =>
-    a + f.rooms.reduce((aa, r) =>
-      aa + (r.networking.banks || []).reduce((s, b) => s + Number(b.jacks || 0), 0), 0), 0);
-  const portsNeeded = Math.ceil(jacks * (1 + state.settings.sparePercent / 100));
+  // Ports & switch plan
+  const portsNeeded = computePortsNeeded();
+  const switchPlan = portsNeeded > 0 ? planSwitches(portsNeeded) : [];
 
-  const switches = portsNeeded > 24
-    ? [{ model: "ARAKNIS-420-48P", ru: 1 }]
-    : portsNeeded > 8
-      ? [{ model: "ARAKNIS-420-24P", ru: 1 }]
-      : portsNeeded > 0
-        ? [{ model: "ARAKNIS-420-8P", ru: 1 }]
-        : [];
-
+  // Controllers/smalls -> shelf
   let smalls = 0;
   state.floors.forEach(f => f.rooms.forEach(r => {
     if (r.control4 && (r.control4.videoStreams > 0 || (r.control4.audio && r.control4.audio.enabled))) smalls++;
   }));
   const shelves = smalls > 0 ? [{ model: "STRONG-1U-SHELF", ru: 1 }] : [];
 
-  const fixed = [{ model: "WattBox WB-700CH", ru: 2 }];
-  const vents = [{ model: "VENT-1U", ru: 1 }, { model: "VENT-1U", ru: 1 }];
+  // Base fixed items
+  const fixed   = [{ model: "WattBox WB-700CH", ru: 2 }];
+  const vents   = [{ model: "VENT-1U", ru: 1 }, { model: "VENT-1U", ru: 1 }];
   const reserve = [{ model: "UPS-RESERVED", ru: 2 }];
 
   const parts = [
     ...fixed,
-    ...switches,
-    ...nvrPlan().map(n => ({ model: n.model, ru: 2 })),
+    ...switchPlan.map(s => ({ model: s.model, ru: 1 })),     // all switches
+    ...nvrPlan().map(n => ({ model: n.model, ru: 2 })),      // NVRs
     ...shelves,
     ...vents,
     ...reserve
   ];
 
+  // Pack items into ≤24U racks
   let current = { ru: 0, items: [] };
   function finalize(){ if (current.items.length) plan.push(current); current = { ru: 0, items: [] }; }
   function add(it){ if (current.ru + it.ru > 24) finalize(); current.items.push(it); current.ru += it.ru; }
   parts.forEach(add); finalize();
 
+  // Map to Strong sizes
   plan.forEach(rk => {
     const need = rk.ru;
     rk.size  = need <= 6 ? 6 : need <= 12 ? 12 : need <= 18 ? 18 : 24;
@@ -510,7 +542,7 @@ window.exportCSV = function(){
           const color = c.color || "W";
           switch (c.type) {
             case "Bullet": model = `LUM-820-IP-BMH${color}`; break;
-            case "Turret": model = "LUM-820-IP-TMHC"; break; // model fixed (no suffix)
+            case "Turret": model = "LUM-820-IP-TMHC"; break; // fixed (no suffix)
             case "PTZ":    model = "LUM-420-IP-PTZ-4X"; break;
             default:       model = `LUM-820-IP-DF${color}`; // Dome
           }
@@ -568,26 +600,28 @@ window.exportCSV = function(){
     if (equip && equip.r) {
       const loc = `${equip.f.name}: ${equip.r.name}`;
 
+      // NVRs
       nvrPlan().forEach(n => { rows.push(row(1, n.model, loc, "Luma", "Surveillance", `${n.channels} channels`)); logCounts.equip++; });
 
-      const jacksTotal = (state.floors || []).reduce((a,f)=>
-        a + (f.rooms || []).reduce((aa,r)=>
-          aa + ((r.networking && Array.isArray(r.networking.banks)) ? r.networking.banks.reduce((s,b)=> s + Number(b.jacks||0), 0) : 0)
-        ,0)
-      ,0);
-      const portsNeeded = Math.ceil(jacksTotal * (1 + state.settings.sparePercent / 100));
+      // Switches (multiple models/quantities as needed)
+      const portsNeeded = computePortsNeeded();
       if (portsNeeded > 0) {
-        let sw = "ARAKNIS-420-8P";
-        if (portsNeeded > 24) sw = "ARAKNIS-420-48P";
-        else if (portsNeeded > 8) sw = "ARAKNIS-420-24P";
-        rows.push(row(1, sw, loc, "Araknis", "Networking", `${portsNeeded} ports incl ${state.settings.sparePercent}% spares`));
-        logCounts.equip++;
+        const plan = planSwitches(portsNeeded);
+        const grouped = plan.reduce((m, s) => { m[s.model] = (m[s.model] || 0) + 1; return m; }, {});
+        Object.entries(grouped).forEach(([model, qty]) => {
+          rows.push(row(qty, model, loc, "Araknis", "Networking",
+            `${portsNeeded} ports incl ${state.settings.sparePercent}% spares`));
+          logCounts.equip++;
+        });
       }
 
+      // WattBox
       rows.push(row(1, "WB-700CH", loc, "WattBox", "Networking", "Power conditioner (2RU)")); logCounts.equip++;
 
+      // Racks (auto)
       computeRacks().forEach((rk,i)=> {
-        rows.push(row(1, rk.model, loc, "Strong", "Networking", `Rack ${i+1}: ${rk.ru} RU used; contents:${rk.items.map(it=>it.model).join(" | ")}`));
+        rows.push(row(1, rk.model, loc, "Strong", "Networking",
+          `Rack ${i+1}: ${rk.ru} RU used; contents:${rk.items.map(it=>it.model).join(" | ")}`));
         logCounts.equip++;
       });
     }
@@ -602,7 +636,6 @@ window.exportCSV = function(){
   console.log("Export summary:", logCounts);
   alert("CSV generated.");
 };
-
 
 /* ====== Seed sample & Init ====== */
 window.seedSample = function(){
