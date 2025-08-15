@@ -1,4 +1,4 @@
-/* calc.js — project calculations (cameras, switches, racks, panels) */
+/* calc.js — vPP-2: cameras, switches, distributed patch panels, racks */
 
 (function(){
   // PoE devices auto-count
@@ -67,7 +67,7 @@
     return out;
   };
 
-  // Ports incl spares
+  // Ports incl spares (switch planning uses spares)
   window.computePortsNeeded = function computePortsNeeded(){
     const jacksTotal = (state.floors || []).reduce((a, f) =>
       a + (f.rooms || []).reduce((aa, r) =>
@@ -78,7 +78,8 @@
     return Math.ceil(jacksTotal * (1 + state.settings.sparePercent / 100));
   };
 
-  // Ethernet home-runs = networking jacks + cameras
+  /* ===== PATCH PANELS =====
+     Ethernet home-runs = networking jacks + cameras (NO spares) */
   window.computeEthernetRuns = function computeEthernetRuns(){
     const jacksTotal = (state.floors || []).reduce((a, f) =>
       a + (f.rooms || []).reduce((aa, r) =>
@@ -88,39 +89,61 @@
     return jacksTotal + cams;
   };
 
-  // Build patch panels: 1× WP-CAT6-HDPP-24 + 1U OPEN-SPACE per 24 runs
-  window.buildPatchPanels = function buildPatchPanels(){
-    const runs = computeEthernetRuns();
-    const panelsNeeded = Math.ceil(runs / 24) || 0;
-    const out = [];
-    for (let i = 0; i < panelsNeeded; i++){
-      out.push({ model: "WP-CAT6-HDPP-24", ru: 1, type: "panel" });
-      out.push({ model: "OPEN-SPACE", ru: 1, type: "blank" }); // no vent under panel
-    }
-    return out;
-  };
+  // Build a payload where patch panels are DISTRIBUTED with switches.
+  // Total panels = ceil(ethernetRuns/24). A 48P switch can host up to 2 panels; 24P → 1; 8P → 0.
+  function buildSwitchAndPanelsPayload(){
+    const portsNeeded = computePortsNeeded();     // with spares -> drives switches
+    const swPlan = portsNeeded > 0 ? planSwitches(portsNeeded) : [];
 
-  // Rack packer (per-rack WattBox, UPS-RESERVED, vents)
+    const totalRuns = computeEthernetRuns();      // no spares -> drives panels
+    let panelsRemaining = Math.ceil(totalRuns / 24) || 0;
+
+    const items = [];
+    swPlan.forEach(sw => {
+      const capacityPanels = Math.floor(sw.ports / 24); // 48->2, 24->1, 8->0
+      const usePanels = Math.min(capacityPanels, panelsRemaining);
+      for (let i = 0; i < usePanels; i++){
+        items.push({ model: "WP-CAT6-HDPP-24", ru: 1, type: "panel" });
+        items.push({ model: "OPEN-SPACE", ru: 1, type: "blank" }); // reserved under panel
+        panelsRemaining--;
+      }
+      items.push({ model: sw.model, ru: 1, type: "switch" });
+    });
+
+    // Edge-case: if for some reason we still owe panels (unlikely), append them;
+    // they’ll flow into the next rack. Still maintain open space under each.
+    while (panelsRemaining-- > 0) {
+      items.push({ model: "WP-CAT6-HDPP-24", ru: 1, type: "panel" });
+      items.push({ model: "OPEN-SPACE", ru: 1, type: "blank" });
+    }
+
+    return items;
+  }
+
+  // Rack packer (per-rack WattBox, UPS-RESERVED, vents + mid-vents)
   window.computeRacks = function(){
     const equip = state.floors.flatMap(f => f.rooms.map(r => ({ f, r })))
                   .find(x => x.r.isEquipmentRoom) ||
                   (state.floors[0] ? { f: state.floors[0], r: state.floors[0].rooms[0] } : null);
     if (!equip || !equip.r) return [];
 
-    const portsNeeded = computePortsNeeded();
-    const switchPlan  = portsNeeded > 0 ? planSwitches(portsNeeded) : [];
-    const nvrs        = nvrPlan().map(n => ({ model: n.model, ru: 2 }));
-    const panels      = buildPatchPanels();
+    // Build payload with DISTRIBUTED panels + switches
+    const switchAndPanels = buildSwitchAndPanelsPayload();
 
+    // NVRs (2U each)
+    const nvrs = nvrPlan().map(n => ({ model: n.model, ru: 2 }));
+
+    // Shelves for smalls (controllers/ancillary)
     let smalls = 0;
     state.floors.forEach(f => f.rooms.forEach(r => {
       if (r.control4 && (r.control4.videoStreams > 0 || (r.control4.audio && r.control4.audio.enabled))) smalls++;
     }));
     const shelves = smalls > 0 ? [{ model: "STRONG-1U-SHELF", ru: 1 }] : [];
 
+    // Final payload order:
+    //   [ panels + blanks interleaved with switches ] → NVRs → Shelves
     const payload = [
-      ...panels,
-      ...switchPlan.map(s => ({ model: s.model, ru: 1 })),
+      ...switchAndPanels,
       ...nvrs,
       ...shelves
     ];
